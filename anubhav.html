@@ -1,0 +1,1797 @@
+<!--
+  ============================================================
+  WELCOME (INDIA) - Mini Project
+  Submitted for: Software Engineering / Web Technology Lab
+  Team: 4th Year, Computer Engineering
+  Guide: Project Mentor (Dept. of CSE)
+  Note: this is a single-page frontend prototype (no real backend/DB yet).
+  Data below is dummy/sample data for demo purposes only.
+  ============================================================
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Welcome · स्वागत है · आपले स्वागत आहे - Rural & Community Tourism Web App</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  /* colour palette - tried to keep it India/earthy themed */
+  :root{
+    --indigo-deep:#1B2A4A;
+    --indigo-ink:#243357;
+    --sandstone:#F1E6D3;
+    --paper:#FBF7EF;
+    --turmeric:#E3A32B;
+    --madder:#B23A2E;
+    --palm:#3F6B4D;
+    --ink:#23262B;
+    --header-light:#FBEED2;
+    --header-light-2:#F6E2B8;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{font-family:'Inter',Arial,sans-serif;background:var(--paper);color:var(--ink);}
+  .font-display{font-family:'Poppins',Arial,sans-serif;}
+  .font-mono{font-family:'Courier New',monospace;}
+  .text-indigo-deep{color:var(--indigo-deep);}
+  .text-turmeric{color:var(--turmeric);}
+  .text-madder{color:var(--madder);}
+  .text-palm{color:var(--palm);}
+  .bg-indigo-deep{background:var(--indigo-deep);}
+  .bg-indigo-ink{background:var(--indigo-ink);}
+  .bg-header-light{background:linear-gradient(180deg,var(--header-light),var(--header-light-2));border-bottom:1px solid rgba(27,42,74,.08);}
+  .bg-sandstone{background:var(--sandstone);}
+  .bg-turmeric{background:var(--turmeric);}
+  .bg-madder{background:var(--madder);}
+  .bg-palm{background:var(--palm);}
+  .border-turmeric{border-color:var(--turmeric);}
+  .motif-strip{height:8px;background-image:linear-gradient(135deg,var(--turmeric) 25%, transparent 25%),linear-gradient(225deg,var(--turmeric) 25%, transparent 25%),linear-gradient(45deg,var(--turmeric) 25%, transparent 25%),linear-gradient(315deg,var(--turmeric) 25%, transparent 25%);background-position:8px 0,8px 0,0 0,0 0;background-size:16px 16px;background-repeat:repeat-x;opacity:.85;}
+  .stitch{border-bottom:2px dashed rgba(27,42,74,.35);}
+  .kolam-bg{background-image:radial-gradient(rgba(227,163,43,.35) 1.3px, transparent 1.3px);background-size:18px 18px;}
+  .card{background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,.1);border:1px solid rgba(27,42,74,.1);transition:transform .15s ease, box-shadow .15s ease;}
+  .card:hover{transform:translateY(-2px);box-shadow:0 8px 18px rgba(0,0,0,.12);}
+  /* buttons - primary/dark/outline used across the site */
+  .btn-primary{background:var(--turmeric);color:var(--indigo-deep);font-weight:600;border-radius:8px;padding:.7rem 1.5rem;transition:filter .15s;}
+  .btn-primary:hover{filter:brightness(1.07);}
+  .btn-dark{background:var(--indigo-deep);color:var(--sandstone);font-weight:600;border-radius:8px;padding:.7rem 1.5rem;transition:filter .15s;}
+  .btn-dark:hover{filter:brightness(1.2);}
+  .btn-outline{border:1.5px solid var(--indigo-deep);color:var(--indigo-deep);font-weight:600;border-radius:8px;padding:.65rem 1.4rem;background:transparent;}
+  .badge-verified{background:rgba(63,107,77,.12);color:var(--palm);font-weight:600;font-size:.72rem;border-radius:999px;padding:.2rem .6rem;border:1px solid rgba(63,107,77,.35);}
+  .badge-crowd-high{background:rgba(178,58,46,.12);color:var(--madder);font-weight:600;font-size:.72rem;border-radius:999px;padding:.2rem .6rem;border:1px solid rgba(178,58,46,.35);}
+  .badge-crowd-low{background:rgba(63,107,77,.12);color:var(--palm);font-weight:600;font-size:.72rem;border-radius:999px;padding:.2rem .6rem;border:1px solid rgba(63,107,77,.35);}
+  .chip{border:1.5px solid rgba(27,42,74,.2);border-radius:999px;padding:.35rem .9rem;font-size:.82rem;font-weight:500;cursor:pointer;transition:all .15s;background:#fff;}
+  .chip.active{background:var(--indigo-deep);color:var(--sandstone);border-color:var(--indigo-deep);}
+  .icon-tile{width:100%;height:150px;border-radius:14px 14px 0 0;display:flex;align-items:center;justify-content:center;font-size:3rem;}
+  input[type=text],input[type=password],input[type=email],input[type=tel],input[type=number],input[type=date],select,textarea{border:1.5px solid rgba(27,42,74,.18);border-radius:10px;padding:.55rem .8rem;width:100%;background:#fff;font-family:inherit;}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--turmeric);border-color:var(--turmeric);}
+  .navlink{cursor:pointer;font-weight:500;padding-bottom:3px;}
+  .navlink.active{border-bottom:2.5px dashed var(--turmeric);}
+  ::-webkit-scrollbar{height:8px;width:8px;}
+  .fade-in{animation:fadeIn .35s ease;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+  .toast{background:var(--indigo-deep);color:var(--sandstone);border-radius:12px;padding:.8rem 1.1rem;box-shadow:0 8px 24px rgba(0,0,0,.25);font-size:.9rem;max-width:320px;}
+  @media(prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important;}}
+
+  /* ---- splash screen ---- */
+  #splash{position:fixed;inset:0;z-index:200;background:var(--indigo-deep);display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--sandstone);transition:opacity .5s ease;}
+  #splash.hide{opacity:0;pointer-events:none;}
+  #splash .splash-title{font-family:'Poppins',Arial,sans-serif;font-weight:800;font-size:clamp(2.6rem,10vw,5rem);letter-spacing:.02em;color:var(--turmeric);}
+  #splash .splash-sub{margin-top:.5rem;font-size:.95rem;opacity:.8;letter-spacing:.15em;text-transform:uppercase;}
+  @keyframes splashPop{from{transform:scale(.85);opacity:0;}to{transform:scale(1);opacity:1;}}
+  #splash .splash-title{animation:splashPop .6s ease;}
+
+  /* ---- activity photo tiles ---- */
+  .photo-tile{width:100%;height:150px;border-radius:14px 14px 0 0;object-fit:cover;display:block;background:var(--sandstone);}
+  .photo-tile-lg{width:100%;height:220px;border-radius:14px;object-fit:cover;display:block;background:var(--sandstone);}
+  .photo-tile-wrap{position:relative;}
+  .photo-tile-wrap .photo-emoji-badge{position:absolute;bottom:8px;right:8px;background:rgba(27,42,74,.75);color:#fff;font-size:1.3rem;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+
+  /* ---- hamburger / dashboard drawer ---- */
+  .hamburger{width:26px;height:19px;display:flex;flex-direction:column;justify-content:space-between;cursor:pointer;}
+  .hamburger span{display:block;height:2.5px;width:100%;background:var(--indigo-deep);border-radius:2px;}
+  #drawerOverlay{position:fixed;inset:0;background:rgba(27,42,74,.45);z-index:90;}
+  #drawer{position:fixed;top:0;right:0;bottom:0;width:280px;max-width:85vw;background:#fff;z-index:91;box-shadow:-8px 0 24px rgba(0,0,0,.2);padding:1.5rem 1.2rem;overflow-y:auto;}
+  .drawer-link{display:block;padding:.7rem .5rem;border-bottom:1px solid rgba(27,42,74,.08);font-weight:500;color:var(--indigo-deep);cursor:pointer;}
+  .drawer-link:hover{background:var(--sandstone);border-radius:8px;}
+
+  /* ---- crowd map ---- */
+  #crowdMap{height:260px;width:100%;border-radius:12px;z-index:0;}
+  .crowd-alt-row{display:flex;justify-content:space-between;align-items:center;padding:.55rem .2rem;border-bottom:1px dashed rgba(27,42,74,.15);font-size:.85rem;}
+  .dot-red{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--madder);margin-right:6px;}
+  .dot-green{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--palm);margin-right:6px;}
+</style>
+</head>
+<body>
+<div id="splash" onclick="dismissSplash()">
+  <div class="splash-title">Anubhav</div>
+  <div class="splash-sub">Don't just visit India. Experience it.</div>
+</div>
+<div id="toasts" class="fixed top-4 right-4 z-[100] flex flex-col gap-2 items-end"></div>
+<div id="app"></div>
+
+<!-- Firebase classic script-tag SDK (works over file://, no build step / ES module imports needed) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<script>
+/* ============================= DATA ============================= */
+const CAT = {
+  fishing:{icon:'🎣',label:'Fishing',price:[400,800],dur:[2,3],title:(s,h)=>`Traditional Fishing with ${h}`,learn:['Reading tides and currents like a local','Traditional net and line techniques','The daily rhythm of a fishing family']},
+  food:{icon:'🍛',label:'Food & Cooking',price:[600,1200],dur:[2,3],title:(s,h)=>`Traditional ${s} Cooking with ${h}`,learn:['Regional spice blends and techniques','A recipe passed down for generations','How to plate and serve like a local host']},
+  art:{icon:'🎨',label:'Art',price:[500,900],dur:[2,2],title:(s,h)=>`${s} Folk Art Workshop with ${h}`,learn:['The symbolism behind traditional motifs','Natural pigments and brush techniques','Creating your own take-home piece']},
+  pottery:{icon:'🏺',label:'Pottery',price:[400,700],dur:[2,2],title:(s,h)=>`Pottery Making with ${h}`,learn:['Working the wheel by hand','Shaping and firing traditional forms','The family history behind the craft']},
+  farming:{icon:'🌾',label:'Farming',price:[400,800],dur:[3,3],title:(s,h)=>`Farm Experience with ${h}`,learn:['A day in the life of a local farmer','Seasonal crops and harvesting techniques','Farm-to-table cooking with fresh produce']},
+  handicrafts:{icon:'🧵',label:'Handicrafts',price:[500,1000],dur:[2,2],title:(s,h)=>`Handicraft Workshop with ${h}`,learn:['Traditional weaving or printing techniques','Sourcing and preparing raw materials','Making a small piece to take home']},
+  music:{icon:'🎶',label:'Music',price:[300,600],dur:[1.5,1.5],title:(s,h)=>`Folk Music Session with ${h}`,learn:['Traditional instruments and rhythms','Folk songs passed down orally','The stories behind the music']},
+  dance:{icon:'💃',label:'Dance',price:[400,700],dur:[1.5,1.5],title:(s,h)=>`Traditional Dance with ${h}`,learn:['Basic steps of a regional folk dance','The stories the dance tells','Costumes and rhythm']},
+  village:{icon:'🌿',label:'Village Life',price:[500,1000],dur:[4,4],title:(s,h)=>`Village Life Experience with ${h}`,learn:['A slower, authentic pace of life','Local customs and daily routines','Shared meals with a local family']},
+  teacoffee:{icon:'☕',label:'Tea/Coffee Farming',price:[300,600],dur:[2,2],title:(s,h)=>`Tea/Coffee Farm Walk with ${h}`,learn:['How the leaf or bean is grown and picked','Traditional processing methods','Tasting straight from the source']}
+};
+/* Real, activity-matched stock photos (Unsplash), keyed by category, so every
+   activity card shows a photo relevant to what's actually being taught. */
+const CAT_IMG = {
+  fishing:'https://images.unsplash.com/photo-1445264718234-016ce8c9d10b?w=600&h=450&fit=crop&q=70',
+  food:'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=600&h=450&fit=crop&q=70',
+  art:'https://images.unsplash.com/photo-1582561833308-51c65f5a6b5f?w=600&h=450&fit=crop&q=70',
+  pottery:'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&h=450&fit=crop&q=70',
+  farming:'https://images.unsplash.com/photo-1500651230702-0e2d8a49d4ad?w=600&h=450&fit=crop&q=70',
+  handicrafts:'https://images.unsplash.com/photo-1528459801416-a9e53bbf4e17?w=600&h=450&fit=crop&q=70',
+  music:'https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=600&h=450&fit=crop&q=70',
+  dance:'https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=600&h=450&fit=crop&q=70',
+  village:'https://images.unsplash.com/photo-1524492412937-b28074a5d7da?w=600&h=450&fit=crop&q=70',
+  teacoffee:'https://images.unsplash.com/photo-1560493676-04071c5f467b?w=600&h=450&fit=crop&q=70'
+};
+function catPhoto(cat){ return CAT_IMG[cat] || CAT_IMG.village; }
+const REGIONS = {
+  Maharashtra:{cities:['Mumbai','Pune','Nashik','Ratnagiri','Kolhapur','Konkan','Mahabaleshwar','Nagpur'],cats:['food','art','fishing','village'],hosts:['Asha Patil','Ravi More','Meena Kadam','Sunil Jadhav'],famous:'Gateway of India, Mumbai',crowd:'high'},
+  Goa:{cities:['Panaji','North Goa','South Goa'],cats:['fishing','food','music','farming'],hosts:['Maria Fernandes',"Joaquim Braganza","Savio D'Souza","Teresa Colaco"],famous:'Baga Beach',crowd:'high'},
+  Kerala:{cities:['Kochi','Alleppey','Munnar','Wayanad','Thiruvananthapuram'],cats:['food','fishing','handicrafts','farming'],hosts:['Latha Menon','Suresh Nair','Beena Pillai','Raghavan K.'],famous:'Alleppey Backwaters',crowd:'high'},
+  Rajasthan:{cities:['Jaipur','Jodhpur','Udaipur','Jaisalmer','Pushkar'],cats:['pottery','handicrafts','food','music'],hosts:['Kishan Prajapati','Radha Chundawat','Bhagwan Das','Manju Rathore'],famous:'Amber Fort, Jaipur',crowd:'high'},
+  Gujarat:{cities:['Ahmedabad','Kutch','Bhuj','Vadodara'],cats:['handicrafts','pottery','food'],hosts:['Hiralal Marwada','Kamla Ben','Jignesh Rabari'],famous:'Rann of Kutch',crowd:'medium'},
+  Karnataka:{cities:['Bengaluru','Mysuru','Hampi','Coorg','Mangaluru'],cats:['teacoffee','food','handicrafts'],hosts:['Chikkanna Gowda','Lakshmi Hegde','Manjunath Rao'],famous:'Hampi Ruins',crowd:'medium'},
+  'Tamil Nadu':{cities:['Chennai','Madurai','Coimbatore','Ooty','Thanjavur'],cats:['food','pottery','handicrafts','dance'],hosts:['Meenakshi Iyer','Murugan Pillai','Kalaivani Raj','Selvam K.'],famous:'Meenakshi Temple, Madurai',crowd:'high'},
+  'West Bengal':{cities:['Kolkata','Darjeeling','Sundarbans'],cats:['teacoffee','food','handicrafts','fishing'],hosts:['Anjali Sarkar','Bipul Roy','Debashish Ghosh','Rina Halder'],famous:'Darjeeling Tea Gardens',crowd:'medium'},
+  'Northeast India':{cities:['Assam','Meghalaya','Sikkim','Nagaland','Arunachal Pradesh'],cats:['teacoffee','handicrafts','food','farming'],hosts:['Temjen Ao','Ibalari Lyngdoh','Karma Bhutia','Anima Boro'],famous:'Living Root Bridges, Meghalaya',crowd:'low'},
+  Odisha:{cities:['Bhubaneswar','Puri','Raghurajpur'],cats:['art','handicrafts','food'],hosts:['Jagannath Maharana','Sabita Das','Raghurajpur Mishra'],famous:'Puri Jagannath Temple',crowd:'medium'},
+  Bihar:{cities:['Patna','Madhubani'],cats:['art','handicrafts','food'],hosts:['Ganga Devi','Shankar Thakur','Neelam Kumari'],famous:'Mahabodhi Temple, Bodh Gaya',crowd:'medium'},
+  'Uttar Pradesh':{cities:['Varanasi','Lucknow','Agra'],cats:['handicrafts','food','music'],hosts:['Ilyas Ansari','Shabana Khatoon','Rajendra Yadav'],famous:'Taj Mahal, Agra',crowd:'high'},
+  Punjab:{cities:['Amritsar','Patiala'],cats:['farming','food','dance'],hosts:['Gurpreet Singh','Baljeet Kaur','Harnek Singh'],famous:'Golden Temple, Amritsar',crowd:'high'},
+  'Himachal Pradesh':{cities:['Shimla','Manali','Dharamshala','Spiti'],cats:['farming','handicrafts','food'],hosts:['Chaman Lal Thakur','Devki Negi','Rinchen Lama'],famous:'Mall Road, Shimla',crowd:'medium'},
+  Uttarakhand:{cities:['Dehradun','Rishikesh','Nainital','Kumaon'],cats:['farming','food','handicrafts'],hosts:['Prakash Bhatt','Bimla Rawat','Deepak Rana'],famous:'Laxman Jhula, Rishikesh',crowd:'medium'},
+  'Madhya Pradesh':{cities:['Bhopal','Indore','Khajuraho'],cats:['art','pottery','handicrafts','food'],hosts:['Bhuri Bai','Kanha Singh Bhil','Ramesh Prajapati','Sita Verma'],famous:'Khajuraho Temples',crowd:'medium'},
+  Telangana:{cities:['Hyderabad','Warangal','Nizamabad'],cats:['food','handicrafts','art'],hosts:['Lakshmamma','Ravinder Reddy','Fatima Begum'],famous:'Charminar, Hyderabad',crowd:'high'},
+  'Andhra Pradesh':{cities:['Vijayawada','Visakhapatnam','Tirupati'],cats:['fishing','food','farming'],hosts:['Subba Rao','Padma Devi','Krishna Murthy'],famous:'Tirupati Temple',crowd:'high'},
+  Chhattisgarh:{cities:['Raipur','Bastar','Jagdalpur'],cats:['art','handicrafts','farming'],hosts:['Sukhdev Netam','Phoolbasan Bai','Ramkumar Yadav'],famous:'Chitrakote Falls',crowd:'low'},
+  'Jammu and Kashmir':{cities:['Srinagar','Gulmarg','Pahalgam'],cats:['handicrafts','farming','food'],hosts:['Abdul Rashid','Shameema Akhtar','Ghulam Nabi'],famous:'Dal Lake, Srinagar',crowd:'medium'}
+};
+/* Approximate state-level centre coordinates, used for the crowd map and
+   "less crowded nearby" suggestions. Not exact — good enough for a demo. */
+const REGION_LATLNG = {
+  Maharashtra:[19.0760,72.8777], Goa:[15.2993,74.1240], Kerala:[9.9312,76.2673],
+  Rajasthan:[26.9124,75.7873], Gujarat:[23.2156,72.6369], Karnataka:[15.3350,76.4600],
+  'Tamil Nadu':[9.9195,78.1193], 'West Bengal':[26.9945,88.3210], 'Northeast India':[26.2006,92.9376],
+  Odisha:[19.8135,85.8312], Bihar:[25.5941,85.1376], 'Uttar Pradesh':[25.3176,82.9739],
+  Punjab:[31.6340,74.8723], 'Himachal Pradesh':[31.1048,77.1734], Uttarakhand:[30.0668,79.0193],
+  'Madhya Pradesh':[24.8318,79.9199], Telangana:[17.3616,78.4747], 'Andhra Pradesh':[16.5062,80.6480],
+  Chhattisgarh:[19.1383,81.9337], 'Jammu and Kashmir':[34.0837,74.7973]
+};
+Object.entries(REGIONS).forEach(([state,info])=>{ info.latlng = REGION_LATLNG[state] || [22.9734,78.6569]; });
+const REVIEW_POOL = [
+  "An unforgettable afternoon — felt like family within minutes.",
+  "So much more meaningful than a typical tour. Worth every rupee.",
+  "The host's story alone was worth the visit. Beautifully authentic.",
+  "Hands-on, warm, and honest. Exactly what real travel should feel like.",
+  "Left with a new skill and a new friend. Highly recommend.",
+  "Quiet, genuine, and far from the crowds. A real highlight of our trip.",
+  "Better than any 5-star hotel experience, honestly. So much heart in it.",
+  "My kids still talk about this. Real learning, not just sightseeing.",
+  "The host went out of their way to make us comfortable. Loved it.",
+  "Simple, honest, and full of stories you won't find in any guidebook."
+];
+function genReviews(seed){
+  const n = 2 + (seed%2);
+  const out=[];
+  for(let i=0;i<n;i++){
+    out.push({user:['Priya','Alex','Tom','Fatima','Wei','Elena','Arjun','Sofia'][(seed+i)%8], rating:(4+((seed+i)%2)), text:REVIEW_POOL[(seed+i*3)%REVIEW_POOL.length]});
+  }
+  return out;
+}
+let EXPERIENCES = [];
+(function buildExperiences(){
+  let sIdx=0;
+  for(const [state,info] of Object.entries(REGIONS)){
+    info.cats.forEach((cat,i)=>{
+      const c = CAT[cat];
+      const host = info.hosts[i%info.hosts.length];
+      const city = info.cities[i%info.cities.length];
+      const seed = sIdx*7+i*3;
+      const price = c.price[0] + (i*35)%(c.price[1]-c.price[0]+40);
+      const duration = c.dur[i%2] || c.dur[0];
+      const verified = !((sIdx+i)%7===0);
+      const rating = (4.5 + ((seed%5)*0.1)).toFixed(1);
+      const reviews = genReviews(seed);
+      const id = `${state.replace(/\s+/g,'-').toLowerCase()}-${cat}-${i}`;
+      EXPERIENCES.push({
+        id, state, city, cat, host,
+        title: c.title(state.replace(' India',''), host),
+        price, duration, rating:parseFloat(rating), reviewCount: reviews.length + 10 + (seed%40),
+        verified, maxGroup: 3 + (i%5),
+        story: `${host.split(' ')[0]} learned this craft from their family in ${city}, and has been sharing it with visitors ever since — a living thread connecting ${state} to those who come to see it.`,
+        learn: c.learn, icon: c.icon,
+        tags: (cat==='village'||cat==='farming') ? ['family','group'] : (cat==='food'||cat==='handicrafts') ? ['couple','family'] : ['solo','couple'],
+        reviews
+      });
+      sIdx++;
+    });
+  }
+})();
+
+/* ============================= LANGUAGES (login / gate) ============================= */
+const LANGUAGES = {
+  en:{native:'English'}, hi:{native:'हिंदी (Hindi)'}, mr:{native:'मराठी (Marathi)'},
+  gu:{native:'ગુજરાતી (Gujarati)'}, raj:{native:'राजस्थानी (Rajasthani)'}, ta:{native:'தமிழ் (Tamil)'},
+  te:{native:'తెలుగు (Telugu)'}, kn:{native:'ಕನ್ನಡ (Kannada)'}, as:{native:'অসমীয়া (Assamese)'},
+  bn:{native:'বাংলা (Bengali)'}, pa:{native:'ਪੰਜਾਬੀ (Punjabi)'}, or:{native:'ଓଡ଼ିଆ (Odia)'},
+  ml:{native:'മലയാളം (Malayalam)'}, ur:{native:'اردو (Urdu)'}
+};
+/* ============================= TRANSLATIONS (UI gate / login / feedback) ============================= */
+const TRANSLATIONS_RAW = {
+  en: {
+    chooseLanguage:"Choose your language", subtitle:"Select your preferred language to continue", continue:"Continue",
+    welcome:"Welcome · स्वागत है · आपले स्वागत आहे", loginSubtitle:"Log in to continue in your preferred language",
+    tourist:"Tourist", host:"Community Host", guide:"Guide", admin:"Admin",
+    name:"Full name", phone:"Phone", email:"Email", password:"Password", address:"Address", location:"Current location / area",
+    login:"Log In", continueGuest:"Continue as Guest",
+    newHere:"New here? Just enter your name and continue — this is a demo login.",
+    logout:"Log out",
+    confessionWall:"Tourist Confession Wall", confessionSubtitle:"Share honest feedback, stories, or confessions about your travel experience — good or bad. This helps hosts and future travelers alike.",
+    yourName:"Your name (optional)", yourRole:"I am a", shareThought:"Share your thought, story, or feedback...",
+    postAnon:"Post anonymously", submit:"Submit", recentPosts:"Recent posts",
+    vendorRegisterNote:"One-time registration. After this, booking confirmations arrive as simple Yes/No messages — no need to keep visiting the website.",
+    bookingReqTitle:"New booking request", bookingReqBody:"tourists", bookingReqAt:"at", bookingReqAmount:"Your share",
+    yesConfirm:"✅ Yes, confirm", noDecline:"❌ No, decline", waitingVendor:"⏳ Waiting for community host to confirm on WhatsApp/SMS",
+    vendorConfirmed:"✅ Confirmed by community host", vendorDeclined:"❌ Declined by community host",
+    slogan1:"Don't Just Visit India.", slogan2:"Experience It Through Its People.",
+    heroSub:"Discover authentic local experiences, support local communities, and explore the culture behind every destination.",
+    getStarted:"Get Started", navHome:"Home", navExplore:"Explore Places", navBookGuide:"Book a Guide",
+    navMyBookings:"My Bookings", navDashboard:"Dashboard", navImpact:"Impact", navFeedback:"Feedback Wall",
+    whatExperience:"What would you like to experience?", featuredTitle:"Featured local experiences", viewAll:"View all",
+    searchDest:"Where to? e.g. Goa, Rajasthan, Kerala...", searchWhat:"What do you want to experience?", search:"Search",
+    bookGuideTitle:"Book a Local Guide", bookGuideSub:"Choose the region you'd like to explore and tell us what you're looking for — we'll send your request straight to a local guide there.",
+    selectRegion:"Select the region you want to explore", yourRequirements:"Any specific requirements?",
+    requirementsPlaceholder:"e.g. interested in local food, need an English-speaking guide, travelling with kids...",
+    preferredDate:"Preferred date", preferredTime:"Preferred time", groupSize:"Number of people",
+    sendGuideRequest:"Send Request to Guide", guideRequestSent:"Your request has been sent to a local guide in this region. 📲",
+    availableGuidesIn:"Available guides in", noGuidesYet:"No guides have registered for this region yet — try another region, or check back soon.",
+    requestThisGuide:"Request this guide",
+    guideDashTitle:"Guide Dashboard", yourProfile:"Your profile", appointmentNotifications:"Appointment notifications",
+    noAppointments:"No appointment requests right now — you'll be notified the moment a tourist books you.",
+    newApptFrom:"New booking request from", apptOn:"on", apptAt:"at", apptRequirements:"Requirements",
+    apptPeople:"People", apptRegion:"Region", upcomingAppts:"Upcoming appointments", noUpcomingAppts:"No upcoming appointments.",
+    revenueLabel:"Revenue", bookingRequestsLabel:"Booking requests", upcomingBookingsLabel:"Upcoming bookings",
+    myBookingsTitle:"My Bookings", myUpcoming:"Upcoming", myPast:"Past experiences", noneYet:"Nothing here yet.",
+    languageLabel:"Language", changeLanguage:"Change language", warliCaption:"Inspired by Warli — India's ancient tribal art",
+    bookThisExp:"Book this experience", dateLabel:"Date", timeLabel:"Time", peopleLabel:"People",
+    requestBooking:"Request Booking", youllLearn:"You'll learn", reviewsLabel:"Reviews",
+    exactLocationShared:"Exact location shared by host", kmFromYou:"km from you", noExactLocation:"Host has not shared an exact location yet — going by",
+    openInMaps:"Open in Maps", useMyLocation:"Use my location", lowCrowd:"Low/medium crowd is currently not very crowded — good time to visit.",
+    crowdedNow:"This place is currently crowded", syncMyLocation:"Sync my location", nearbyLessCrowded:"Nearby, less-crowded alternatives",
+    noNearbyAlt:"No nearby alternatives found.", welcomeBack:"Welcome back", shareExactLocation:"Share my exact location",
+    upcomingBookings:"Upcoming bookings", noUpcomingBookingsYet:"No upcoming bookings yet.", totalRevenueMade:"Total revenue made till now",
+    earningsBreakdown:"Earnings breakdown", noConfirmedBookings:"No confirmed bookings yet.", myReviewsFeedback:"My Reviews & Feedback",
+    noReviewsYet:"No reviews yet.", myProfile:"My Profile", saveProfile:"Save Profile", fillExperience:"Fill your experience",
+    experiencePlaceholder:"Tell tourists about your guiding experience, specialties, and languages you speak...",
+    buildItineraryTitle:"Build Your Own Itinerary", buildItinerarySub:"Pick the activities you want, choose the time that works for you, and put together your own custom plan.",
+    stateLabel:"State", activityType:"Activity type", experienceLabel:"Experience", addToItinerary:"+ Add to itinerary",
+    yourPlanSoFar:"Your plan so far", noActivitiesYet:"No activities added yet.", saveItineraryBtn:"Save Itinerary",
+    yourSavedItineraries:"Your saved itineraries", mySavedItineraries:"My saved itineraries",
+    adminOverview:"Admin Overview", totalBookingValue:"Total booking value", bookingsLabel:"Bookings",
+    registeredHosts:"Registered community hosts", registeredGuides:"Registered guides", hostLocations:"Community host locations",
+    noHostsYet:"No community hosts registered yet.", reportsLabel:"Reports", guideRequestsLabel:"Guide requests",
+    hostedBy:"Hosted by", perPerson:"per person", maxGroupLabel:"max", requiredFieldsNote:"All fields are required",
+    dashboardTitle:"Dashboard", allFieldsRequired:"* All fields are required"
+  },
+  hi: {
+    chooseLanguage:"अपनी भाषा चुनें", subtitle:"जारी रखने के लिए अपनी पसंदीदा भाषा चुनें", continue:"आगे बढ़ें",
+    welcome:"स्वागत है · Welcome · आपले स्वागत आहे", loginSubtitle:"अपनी पसंदीदा भाषा में जारी रखने के लिए लॉग इन करें",
+    tourist:"पर्यटक", host:"स्थानीय विक्रेता", guide:"गाइड", admin:"एडमिन",
+    name:"पूरा नाम", phone:"फ़ोन नंबर", email:"ईमेल", password:"पासवर्ड", address:"पता", location:"वर्तमान स्थान / क्षेत्र",
+    login:"लॉग इन करें", continueGuest:"मेहमान के रूप में जारी रखें",
+    newHere:"यहाँ नए हैं? बस अपना नाम दर्ज करें और आगे बढ़ें — यह एक डेमो लॉगिन है।",
+    logout:"लॉग आउट",
+    confessionWall:"पर्यटक फीडबैक दीवार", confessionSubtitle:"अपनी यात्रा के बारे में ईमानदार प्रतिक्रिया, कहानियाँ या बातें साझा करें — अच्छी हों या बुरी। इससे मेज़बानों और भावी यात्रियों दोनों को मदद मिलती है।",
+    yourName:"आपका नाम (वैकल्पिक)", yourRole:"मैं हूँ", shareThought:"अपनी बात, कहानी या फीडबैक साझा करें...",
+    postAnon:"गुमनाम रूप से पोस्ट करें", submit:"सबमिट करें", recentPosts:"हाल की पोस्ट",
+    vendorRegisterNote:"एक बार पंजीकरण करें। इसके बाद बुकिंग की पुष्टि सीधे आसान हाँ/ना संदेश के रूप में आएगी — बार-बार वेबसाइट पर आने की ज़रूरत नहीं।",
+    bookingReqTitle:"नई बुकिंग का अनुरोध", bookingReqBody:"पर्यटक", bookingReqAt:"समय", bookingReqAmount:"आपका हिस्सा",
+    yesConfirm:"✅ हाँ, पुष्टि करें", noDecline:"❌ नहीं, मना करें", waitingVendor:"⏳ विक्रेता के व्हाट्सएप/एसएमएस पर पुष्टि का इंतज़ार है",
+    vendorConfirmed:"✅ विक्रेता द्वारा पुष्टि की गई", vendorDeclined:"❌ विक्रेता ने मना कर दिया",
+    slogan1:"सिर्फ़ भारत मत घूमिए।", slogan2:"इसे इसके लोगों के ज़रिए अनुभव कीजिए।",
+    heroSub:"असली स्थानीय अनुभव खोजें, स्थानीय समुदायों का साथ दें, और हर जगह की असली संस्कृति को जानें।",
+    getStarted:"शुरू करें", navHome:"होम", navExplore:"जगहें देखें", navBookGuide:"गाइड बुक करें",
+    navMyBookings:"मेरी बुकिंग", navDashboard:"डैशबोर्ड", navImpact:"प्रभाव", navFeedback:"फीडबैक दीवार",
+    whatExperience:"आप क्या अनुभव करना चाहेंगे?", featuredTitle:"चुनिंदा स्थानीय अनुभव", viewAll:"सभी देखें",
+    searchDest:"कहाँ जाना है? जैसे गोवा, राजस्थान, केरल...", searchWhat:"आप क्या अनुभव करना चाहते हैं?", search:"खोजें",
+    bookGuideTitle:"स्थानीय गाइड बुक करें", bookGuideSub:"जो क्षेत्र आप घूमना चाहते हैं उसे चुनें और हमें बताएं आपको क्या चाहिए — हम आपका अनुरोध सीधे वहाँ के स्थानीय गाइड को भेज देंगे।",
+    selectRegion:"जो क्षेत्र आप घूमना चाहते हैं उसे चुनें", yourRequirements:"कोई खास ज़रूरत?",
+    requirementsPlaceholder:"जैसे स्थानीय खाने में रुचि, अंग्रेज़ी बोलने वाला गाइड चाहिए, बच्चों के साथ यात्रा...",
+    preferredDate:"पसंदीदा तारीख", preferredTime:"पसंदीदा समय", groupSize:"लोगों की संख्या",
+    sendGuideRequest:"गाइड को अनुरोध भेजें", guideRequestSent:"आपका अनुरोध इस क्षेत्र के स्थानीय गाइड को भेज दिया गया है। 📲",
+    availableGuidesIn:"में उपलब्ध गाइड", noGuidesYet:"इस क्षेत्र में अभी कोई गाइड पंजीकृत नहीं है — कोई और क्षेत्र चुनें या बाद में देखें।",
+    requestThisGuide:"इस गाइड को अनुरोध भेजें",
+    guideDashTitle:"गाइड डैशबोर्ड", yourProfile:"आपकी प्रोफ़ाइल", appointmentNotifications:"अपॉइंटमेंट सूचनाएं",
+    noAppointments:"अभी कोई अनुरोध नहीं है — जैसे ही कोई पर्यटक बुक करेगा आपको सूचित किया जाएगा।",
+    newApptFrom:"नया बुकिंग अनुरोध", apptOn:"तारीख", apptAt:"समय", apptRequirements:"ज़रूरतें",
+    apptPeople:"लोग", apptRegion:"क्षेत्र", upcomingAppts:"आगामी अपॉइंटमेंट", noUpcomingAppts:"कोई आगामी अपॉइंटमेंट नहीं।",
+    revenueLabel:"कमाई", bookingRequestsLabel:"बुकिंग अनुरोध", upcomingBookingsLabel:"आगामी बुकिंग",
+    myBookingsTitle:"मेरी बुकिंग", myUpcoming:"आगामी", myPast:"पिछले अनुभव", noneYet:"अभी यहाँ कुछ नहीं है।",
+    languageLabel:"भाषा", changeLanguage:"भाषा बदलें", warliCaption:"वारली — भारत की प्राचीन आदिवासी कला से प्रेरित",
+    bookThisExp:"यह अनुभव बुक करें", dateLabel:"तारीख", timeLabel:"समय", peopleLabel:"लोग",
+    requestBooking:"बुकिंग का अनुरोध करें", youllLearn:"आप क्या सीखेंगे", reviewsLabel:"समीक्षाएं",
+    exactLocationShared:"मेज़बान द्वारा सटीक स्थान साझा किया गया", kmFromYou:"किमी दूर", noExactLocation:"मेज़बान ने अभी तक सटीक स्थान साझा नहीं किया है — फिलहाल",
+    openInMaps:"मैप्स में खोलें", useMyLocation:"मेरा स्थान उपयोग करें", lowCrowd:"अभी ज़्यादा भीड़ नहीं है — घूमने का अच्छा समय है।",
+    crowdedNow:"यह जगह अभी भीड़भाड़ वाली है", syncMyLocation:"मेरा स्थान सिंक करें", nearbyLessCrowded:"पास की कम भीड़ वाली जगहें",
+    noNearbyAlt:"पास में कोई विकल्प नहीं मिला।", welcomeBack:"वापसी पर स्वागत है", shareExactLocation:"अपना सटीक स्थान साझा करें",
+    upcomingBookings:"आगामी बुकिंग", noUpcomingBookingsYet:"अभी कोई आगामी बुकिंग नहीं है।", totalRevenueMade:"अब तक की कुल कमाई",
+    earningsBreakdown:"कमाई का विवरण", noConfirmedBookings:"अभी कोई पुष्टि की गई बुकिंग नहीं है।", myReviewsFeedback:"मेरी समीक्षाएं और फीडबैक",
+    noReviewsYet:"अभी कोई समीक्षा नहीं है।", myProfile:"मेरी प्रोफ़ाइल", saveProfile:"प्रोफ़ाइल सहेजें", fillExperience:"अपना अनुभव भरें",
+    experiencePlaceholder:"पर्यटकों को अपने गाइडिंग अनुभव, विशेषज्ञता और बोली जाने वाली भाषाओं के बारे में बताएं...",
+    buildItineraryTitle:"अपनी यात्रा योजना बनाएं", buildItinerarySub:"अपनी पसंद की गतिविधियां चुनें, सही समय चुनें, और अपनी योजना बनाएं।",
+    stateLabel:"राज्य", activityType:"गतिविधि प्रकार", experienceLabel:"अनुभव", addToItinerary:"+ योजना में जोड़ें",
+    yourPlanSoFar:"अब तक की योजना", noActivitiesYet:"अभी कोई गतिविधि नहीं जोड़ी गई।", saveItineraryBtn:"योजना सहेजें",
+    yourSavedItineraries:"आपकी सहेजी गई योजनाएं", mySavedItineraries:"मेरी सहेजी गई योजनाएं",
+    adminOverview:"एडमिन विवरण", totalBookingValue:"कुल बुकिंग मूल्य", bookingsLabel:"बुकिंग",
+    registeredHosts:"पंजीकृत कम्युनिटी होस्ट", registeredGuides:"पंजीकृत गाइड", hostLocations:"कम्युनिटी होस्ट स्थान",
+    noHostsYet:"अभी कोई कम्युनिटी होस्ट पंजीकृत नहीं है।", reportsLabel:"रिपोर्ट", guideRequestsLabel:"गाइड अनुरोध",
+    hostedBy:"मेज़बान", perPerson:"प्रति व्यक्ति", maxGroupLabel:"अधिकतम", requiredFieldsNote:"सभी फ़ील्ड आवश्यक हैं",
+    dashboardTitle:"डैशबोर्ड", allFieldsRequired:"* सभी फ़ील्ड आवश्यक हैं"
+  },
+  mr: {
+    chooseLanguage:"तुमची भाषा निवडा", subtitle:"पुढे जाण्यासाठी तुमची आवडती भाषा निवडा", continue:"पुढे जा",
+    welcome:"आपले स्वागत आहे · स्वागत है · Welcome", loginSubtitle:"तुमच्या आवडत्या भाषेत सुरू ठेवण्यासाठी लॉगिन करा",
+    tourist:"पर्यटक", host:"स्थानिक विक्रेता", guide:"मार्गदर्शक", admin:"प्रशासक",
+    name:"पूर्ण नाव", phone:"फोन नंबर", email:"ईमेल", password:"पासवर्ड", address:"पत्ता", location:"सध्याचे ठिकाण / परिसर",
+    login:"लॉग इन करा", continueGuest:"पाहुणे म्हणून सुरू ठेवा",
+    newHere:"इथे नवीन आहात? फक्त तुमचे नाव टाका आणि पुढे जा — हे डेमो लॉगिन आहे.",
+    logout:"लॉग आउट",
+    confessionWall:"पर्यटक फीडबॅक भिंत", confessionSubtitle:"तुमच्या प्रवासाच्या अनुभवाबद्दल प्रामाणिक अभिप्राय, कथा किंवा मन मोकळेपणाने शेअर करा — चांगले असो वा वाईट. यामुळे यजमान आणि भावी प्रवाशांना मदत होते.",
+    yourName:"तुमचे नाव (ऐच्छिक)", yourRole:"मी आहे", shareThought:"तुमचे विचार, कथा किंवा फीडबॅक शेअर करा...",
+    postAnon:"निनावी पोस्ट करा", submit:"सबमिट करा", recentPosts:"अलीकडील पोस्ट्स",
+    vendorRegisterNote:"एकदाच नोंदणी करा. यानंतर बुकिंगची पुष्टी सोप्या हो/नाही संदेशाद्वारे येईल — पुन्हा पुन्हा वेबसाइटवर येण्याची गरज नाही.",
+    bookingReqTitle:"नवीन बुकिंग विनंती", bookingReqBody:"पर्यटक", bookingReqAt:"वेळ", bookingReqAmount:"तुमचा वाटा",
+    yesConfirm:"✅ हो, पुष्टी करा", noDecline:"❌ नाही, नकार द्या", waitingVendor:"⏳ विक्रेत्याच्या व्हॉट्सअॅप/एसएमएसवर पुष्टीची वाट पाहत आहे",
+    vendorConfirmed:"✅ विक्रेत्याने पुष्टी केली", vendorDeclined:"❌ विक्रेत्याने नकार दिला",
+    slogan1:"फक्त भारत भेट देऊ नका.", slogan2:"त्याच्या लोकांच्या माध्यमातून अनुभवा.",
+    heroSub:"अस्सल स्थानिक अनुभव शोधा, स्थानिक समुदायांना पाठिंबा द्या, आणि प्रत्येक ठिकाणामागील संस्कृती जाणून घ्या.",
+    getStarted:"सुरू करा", navHome:"होम", navExplore:"ठिकाणे पहा", navBookGuide:"मार्गदर्शक बुक करा",
+    navMyBookings:"माझ्या बुकिंग्ज", navDashboard:"डॅशबोर्ड", navImpact:"परिणाम", navFeedback:"फीडबॅक भिंत",
+    whatExperience:"तुम्हाला काय अनुभवायला आवडेल?", featuredTitle:"निवडक स्थानिक अनुभव", viewAll:"सर्व पहा",
+    searchDest:"कुठे जायचंय? उदा. गोवा, राजस्थान, केरळ...", searchWhat:"तुम्हाला काय अनुभवायचं आहे?", search:"शोधा",
+    bookGuideTitle:"स्थानिक मार्गदर्शक बुक करा", bookGuideSub:"तुम्हाला जो प्रदेश फिरायचा आहे तो निवडा आणि तुमची गरज सांगा — आम्ही तुमची विनंती तिथल्या स्थानिक मार्गदर्शकाला पाठवू.",
+    selectRegion:"तुम्हाला फिरायचा प्रदेश निवडा", yourRequirements:"काही विशिष्ट गरज आहे का?",
+    requirementsPlaceholder:"उदा. स्थानिक खाद्यपदार्थांत रस, इंग्रजी बोलणारा मार्गदर्शक हवा, मुलांसोबत प्रवास...",
+    preferredDate:"पसंतीची तारीख", preferredTime:"पसंतीची वेळ", groupSize:"लोकांची संख्या",
+    sendGuideRequest:"मार्गदर्शकाला विनंती पाठवा", guideRequestSent:"तुमची विनंती या प्रदेशातील स्थानिक मार्गदर्शकाला पाठवली आहे. 📲",
+    availableGuidesIn:"येथे उपलब्ध मार्गदर्शक", noGuidesYet:"या प्रदेशात अजून कोणीही मार्गदर्शक नोंदणीकृत नाही — दुसरा प्रदेश निवडा किंवा नंतर तपासा.",
+    requestThisGuide:"या मार्गदर्शकाला विनंती पाठवा",
+    guideDashTitle:"मार्गदर्शक डॅशबोर्ड", yourProfile:"तुमची प्रोफाइल", appointmentNotifications:"अपॉइंटमेंट सूचना",
+    noAppointments:"सध्या कोणतीही विनंती नाही — पर्यटकाने बुक करताच तुम्हाला कळवले जाईल.",
+    newApptFrom:"नवीन बुकिंग विनंती", apptOn:"तारीख", apptAt:"वेळ", apptRequirements:"गरजा",
+    apptPeople:"लोक", apptRegion:"प्रदेश", upcomingAppts:"आगामी अपॉइंटमेंट्स", noUpcomingAppts:"कोणतेही आगामी अपॉइंटमेंट नाही.",
+    revenueLabel:"कमाई", bookingRequestsLabel:"बुकिंग विनंत्या", upcomingBookingsLabel:"आगामी बुकिंग्ज",
+    myBookingsTitle:"माझ्या बुकिंग्ज", myUpcoming:"आगामी", myPast:"मागील अनुभव", noneYet:"इथे अजून काही नाही.",
+    languageLabel:"भाषा", changeLanguage:"भाषा बदला", warliCaption:"वारली — भारताच्या प्राचीन आदिवासी कलेने प्रेरित",
+    bookThisExp:"हा अनुभव बुक करा", dateLabel:"तारीख", timeLabel:"वेळ", peopleLabel:"लोक",
+    requestBooking:"बुकिंगची विनंती करा", youllLearn:"तुम्ही काय शिकाल", reviewsLabel:"अभिप्राय",
+    exactLocationShared:"यजमानाने अचूक स्थान शेअर केले आहे", kmFromYou:"किमी दूर", noExactLocation:"यजमानाने अद्याप अचूक स्थान शेअर केलेले नाही — सध्या",
+    openInMaps:"नकाशामध्ये उघडा", useMyLocation:"माझे स्थान वापरा", lowCrowd:"सध्या जास्त गर्दी नाही — भेट देण्यासाठी चांगली वेळ आहे.",
+    crowdedNow:"ही जागा सध्या गर्दीची आहे", syncMyLocation:"माझे स्थान सिंक करा", nearbyLessCrowded:"जवळपासच्या कमी गर्दीच्या जागा",
+    noNearbyAlt:"जवळपास पर्याय आढळले नाहीत.", welcomeBack:"पुन्हा स्वागत आहे", shareExactLocation:"माझे अचूक स्थान शेअर करा",
+    upcomingBookings:"आगामी बुकिंग्ज", noUpcomingBookingsYet:"अजून कोणतेही आगामी बुकिंग नाही.", totalRevenueMade:"आतापर्यंतची एकूण कमाई",
+    earningsBreakdown:"कमाईचा तपशील", noConfirmedBookings:"अजून कोणतेही पुष्टी झालेले बुकिंग नाही.", myReviewsFeedback:"माझे अभिप्राय आणि फीडबॅक",
+    noReviewsYet:"अजून कोणताही अभिप्राय नाही.", myProfile:"माझी प्रोफाइल", saveProfile:"प्रोफाइल जतन करा", fillExperience:"तुमचा अनुभव भरा",
+    experiencePlaceholder:"पर्यटकांना तुमच्या मार्गदर्शन अनुभवाबद्दल, खासियतीबद्दल आणि बोलल्या जाणाऱ्या भाषांबद्दल सांगा...",
+    buildItineraryTitle:"तुमची स्वतःची योजना तयार करा", buildItinerarySub:"तुम्हाला हव्या असलेल्या गतिविधी निवडा, योग्य वेळ निवडा आणि तुमची योजना तयार करा.",
+    stateLabel:"राज्य", activityType:"गतिविधी प्रकार", experienceLabel:"अनुभव", addToItinerary:"+ योजनेत जोडा",
+    yourPlanSoFar:"आतापर्यंतची योजना", noActivitiesYet:"अजून कोणतीही गतिविधी जोडलेली नाही.", saveItineraryBtn:"योजना जतन करा",
+    yourSavedItineraries:"तुमच्या जतन केलेल्या योजना", mySavedItineraries:"माझ्या जतन केलेल्या योजना",
+    adminOverview:"प्रशासक विवरण", totalBookingValue:"एकूण बुकिंग मूल्य", bookingsLabel:"बुकिंग्ज",
+    registeredHosts:"नोंदणीकृत कम्युनिटी होस्ट", registeredGuides:"नोंदणीकृत मार्गदर्शक", hostLocations:"कम्युनिटी होस्ट ठिकाणे",
+    noHostsYet:"अजून कोणतेही कम्युनिटी होस्ट नोंदणीकृत नाहीत.", reportsLabel:"अहवाल", guideRequestsLabel:"मार्गदर्शक विनंत्या",
+    hostedBy:"यजमान", perPerson:"प्रति व्यक्ती", maxGroupLabel:"कमाल", requiredFieldsNote:"सर्व फील्ड आवश्यक आहेत",
+    dashboardTitle:"डॅशबोर्ड", allFieldsRequired:"* सर्व फील्ड आवश्यक आहेत"
+  },
+  gu: {
+    chooseLanguage:"તમારી ભાષા પસંદ કરો", welcome:"Welcome · स्वागत है · आपले स्वागत आहे", loginSubtitle:"ચાલુ રાખવા લોગ ઇન કરો",
+    tourist:"પ્રવાસી", host:"સ્થાનિક વિક્રેતા", guide:"ગાઈડ", admin:"એડમિન",
+    name:"પૂરું નામ", phone:"ફોન નંબર", password:"પાસવર્ડ", address:"સરનામું", location:"હાલનું સ્થળ / વિસ્તાર",
+    login:"લોગ ઇન કરો", continueGuest:"મહેમાન તરીકે ચાલુ રાખો", logout:"લોગ આઉટ",
+    vendorRegisterNote:"એક જ વાર નોંધણી કરો. ત્યારબાદ બુકિંગની પુષ્ટિ સરળ હા/ના સંદેશા તરીકે મળશે.",
+    yesConfirm:"✅ હા, પુષ્ટિ કરો", noDecline:"❌ ના, નકારો", waitingVendor:"⏳ વિક્રેતાની પુષ્ટિની રાહ જોવાઈ રહી છે",
+    slogan1:"ફક્ત ભારત ફરવા ન જાવ.", slogan2:"તેના લોકો દ્વારા તેને અનુભવો.",
+    getStarted:"શરૂ કરો", navHome:"હોમ", navExplore:"સ્થળો જુઓ", navBookGuide:"ગાઈડ બુક કરો",
+    navMyBookings:"મારી બુકિંગ", navDashboard:"ડેશબોર્ડ", guideDashTitle:"ગાઈડ ડેશબોર્ડ",
+    appointmentNotifications:"એપોઇન્ટમેન્ટ સૂચનાઓ", bookGuideTitle:"સ્થાનિક ગાઈડ બુક કરો",
+    sendGuideRequest:"ગાઈડને વિનંતી મોકલો", revenueLabel:"કમાણી", selectRegion:"તમારે જે વિસ્તાર ફરવો છે તે પસંદ કરો",
+    yourRequirements:"કોઈ ખાસ જરૂરિયાત?"
+  },
+  raj: {
+    chooseLanguage:"आपणी भासा चुणो", welcome:"Welcome · स्वागत है · आपले स्वागत आहे", loginSubtitle:"आगे बधवा वास्ते लॉग इन करो",
+    tourist:"पर्यटक", host:"लोकल विक्रेता", guide:"गाइड", admin:"एडमिन",
+    name:"पूरो नाम", phone:"फोन नंबर", password:"पासवर्ड", address:"पतो", location:"अबार री जगह / इलाको",
+    login:"लॉग इन करो", continueGuest:"मेहमान बणने रैवो", logout:"लॉग आउट",
+    vendorRegisterNote:"एक बार ही रजिस्टर करो। इण पछे बुकिंग री पुष्टि सीधी हां/ना संदेश में मिलसी।",
+    yesConfirm:"✅ हां, पुष्टि करो", noDecline:"❌ ना, मना करो", waitingVendor:"⏳ विक्रेता री पुष्टि रो इंतजार है",
+    slogan1:"बस भारत ने घूमो मत।", slogan2:"अठै रे लोगां रे साथै अनुभव करो।",
+    getStarted:"शुरू करो", navHome:"होम", navExplore:"जगहां देखो", navBookGuide:"गाइड बुक करो",
+    navMyBookings:"म्हारी बुकिंग", navDashboard:"डैशबोर्ड", guideDashTitle:"गाइड डैशबोर्ड",
+    appointmentNotifications:"अपॉइंटमेंट सूचना", bookGuideTitle:"लोकल गाइड बुक करो",
+    sendGuideRequest:"गाइड ने अनुरोध भेजो", revenueLabel:"कमाई", selectRegion:"जिको इलाको घूमणो है वो चुणो",
+    yourRequirements:"कोई खास जरूरत?"
+  },
+  ta: {
+    chooseLanguage:"உங்கள் மொழியைத் தேர்ந்தெடுக்கவும்", welcome:"Welcome · स्वागत है · आपले स्वागत आहे", loginSubtitle:"தொடர உள்நுழையவும்",
+    tourist:"சுற்றுலாப் பயணி", host:"உள்ளூர் விற்பனையாளர்", guide:"வழிகாட்டி", admin:"நிர்வாகி",
+    name:"முழுப் பெயர்", phone:"தொலைபேசி எண்", password:"கடவுச்சொல்", address:"முகவரி", location:"தற்போதைய இடம் / பகுதி",
+    login:"உள்நுழைக", continueGuest:"விருந்தினராக தொடரவும்", logout:"வெளியேறு",
+    vendorRegisterNote:"ஒரே முறை பதிவு செய்யவும். இதன் பிறகு முன்பதிவு உறுதிப்படுத்தல் ஆம்/இல்லை செய்தியாக வரும்.",
+    yesConfirm:"✅ ஆம், உறுதி செய்க", noDecline:"❌ இல்லை, நிராகரி", waitingVendor:"⏳ விற்பனையாளர் உறுதிப்படுத்த காத்திருக்கிறது",
+    slogan1:"இந்தியாவைப் பார்வையிட மட்டும் வேண்டாம்.", slogan2:"அதன் மக்கள் மூலம் அதை அனுபவியுங்கள்.",
+    getStarted:"தொடங்குங்கள்", navHome:"முகப்பு", navExplore:"இடங்களைப் பார்க்க", navBookGuide:"வழிகாட்டியை பதிவு செய்க",
+    navMyBookings:"என் முன்பதிவுகள்", navDashboard:"டாஷ்போர்டு", guideDashTitle:"வழிகாட்டி டாஷ்போர்டு",
+    appointmentNotifications:"முன்பதிவு அறிவிப்புகள்", bookGuideTitle:"உள்ளூர் வழிகாட்டியை பதிவு செய்க",
+    sendGuideRequest:"வழிகாட்டிக்கு கோரிக்கை அனுப்பு", revenueLabel:"வருவாய்", selectRegion:"நீங்கள் பார்க்க விரும்பும் பகுதியைத் தேர்ந்தெடுக்கவும்",
+    yourRequirements:"ஏதேனும் குறிப்பிட்ட தேவை?"
+  },
+  te: {
+    chooseLanguage:"మీ భాషను ఎంచుకోండి", welcome:"Welcome · स्वागत है · आपले स्वागत आहे", loginSubtitle:"కొనసాగించడానికి లాగిన్ అవ్వండి",
+    tourist:"పర్యాటకుడు", host:"స్థానిక విక్రేత", guide:"గైడ్", admin:"అడ్మిన్",
+    name:"పూర్తి పేరు", phone:"ఫోన్ నంబర్", password:"పాస్‌వర్డ్", address:"చిరునామా", location:"ప్రస్తుత ప్రాంతం",
+    login:"లాగిన్ చేయండి", continueGuest:"అతిథిగా కొనసాగించండి", logout:"లాగ్ అవుట్",
+    vendorRegisterNote:"ఒకసారి నమోదు చేయండి. దీని తర్వాత బుకింగ్ నిర్ధారణ సులభమైన అవును/కాదు సందేశంగా వస్తుంది.",
+    yesConfirm:"✅ అవును, నిర్ధారించండి", noDecline:"❌ కాదు, తిరస్కరించండి", waitingVendor:"⏳ విక్రేత నిర్ధారణ కోసం వేచి ఉంది",
+    slogan1:"భారతదేశాన్ని కేవలం సందర్శించకండి.", slogan2:"దాని ప్రజల ద్వారా అనుభవించండి.",
+    getStarted:"ప్రారంభించండి", navHome:"హోమ్", navExplore:"ప్రదేశాలు చూడండి", navBookGuide:"గైడ్‌ని బుక్ చేయండి",
+    navMyBookings:"నా బుకింగ్‌లు", navDashboard:"డాష్‌బోర్డ్", guideDashTitle:"గైడ్ డాష్‌బోర్డ్",
+    appointmentNotifications:"అపాయింట్‌మెంట్ నోటిఫికేషన్‌లు", bookGuideTitle:"స్థానిక గైడ్‌ని బుక్ చేయండి",
+    sendGuideRequest:"గైడ్‌కి అభ్యర్థన పంపండి", revenueLabel:"ఆదాయం", selectRegion:"మీరు అన్వేషించాలనుకుంటున్న ప్రాంతాన్ని ఎంచుకోండి",
+    yourRequirements:"ఏదైనా ప్రత్యేక అవసరం?"
+  },
+  kn: {
+    chooseLanguage:"ನಿಮ್ಮ ಭಾಷೆಯನ್ನು ಆರಿಸಿ", welcome:"Welcome · स्वागत है · आपले स्वागत आहे", loginSubtitle:"ಮುಂದುವರಿಸಲು ಲಾಗಿನ್ ಮಾಡಿ",
+    tourist:"ಪ್ರವಾಸಿ", host:"ಸ್ಥಳೀಯ ಮಾರಾಟಗಾರ", guide:"ಗೈಡ್", admin:"ಅಡ್ಮಿನ್",
+    name:"ಪೂರ್ಣ ಹೆಸರು", phone:"ಫೋನ್ ಸಂಖ್ಯೆ", password:"ಪಾಸ್‌ವರ್ಡ್", address:"ವಿಳಾಸ", location:"ಪ್ರಸ್ತುತ ಸ್ಥಳ",
+    login:"ಲಾಗಿನ್ ಮಾಡಿ", continueGuest:"ಅತಿಥಿಯಾಗಿ ಮುಂದುವರಿಸಿ", logout:"ಲಾಗ್ ಔಟ್",
+    vendorRegisterNote:"ಒಮ್ಮೆ ನೋಂದಣಿ ಮಾಡಿ. ನಂತರ ಬುಕಿಂಗ್ ದೃಢೀಕರಣ ಸುಲಭ ಹೌದು/ಇಲ್ಲ ಸಂದೇಶವಾಗಿ ಬರುತ್ತದೆ.",
+    yesConfirm:"✅ ಹೌದು, ದೃಢೀಕರಿಸಿ", noDecline:"❌ ಇಲ್ಲ, ತಿರಸ್ಕರಿಸಿ", waitingVendor:"⏳ ಮಾರಾಟಗಾರರ ದೃಢೀಕರಣಕ್ಕಾಗಿ ಕಾಯಲಾಗುತ್ತಿದೆ",
+    slogan1:"ಭಾರತಕ್ಕೆ ಬರೀ ಭೇಟಿ ನೀಡಬೇಡಿ.", slogan2:"ಅದರ ಜನರ ಮೂಲಕ ಅದನ್ನು ಅನುಭವಿಸಿ.",
+    getStarted:"ಪ್ರಾರಂಭಿಸಿ", navHome:"ಮುಖಪುಟ", navExplore:"ಸ್ಥಳಗಳನ್ನು ನೋಡಿ", navBookGuide:"ಗೈಡ್ ಬುಕ್ ಮಾಡಿ",
+    navMyBookings:"ನನ್ನ ಬುಕಿಂಗ್‌ಗಳು", navDashboard:"ಡ್ಯಾಶ್‌ಬೋರ್ಡ್", guideDashTitle:"ಗೈಡ್ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್",
+    appointmentNotifications:"ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್ ಅಧಿಸೂಚನೆಗಳು", bookGuideTitle:"ಸ್ಥಳೀಯ ಗೈಡ್ ಬುಕ್ ಮಾಡಿ",
+    sendGuideRequest:"ಗೈಡ್‌ಗೆ ವಿನಂತಿ ಕಳುಹಿಸಿ", revenueLabel:"ಆದಾಯ", selectRegion:"ನೀವು ಅನ್ವೇಷಿಸಲು ಬಯಸುವ ಪ್ರದೇಶವನ್ನು ಆಯ್ಕೆಮಾಡಿ",
+    yourRequirements:"ಯಾವುದೇ ನಿರ್ದಿಷ್ಟ ಅಗತ್ಯವಿದೆಯೇ?"
+  },
+  as: {
+    chooseLanguage:"আপোনাৰ ভাষা বাছনি কৰক", welcome:"Welcome · स्वागत है · आपले स्वागत आहे", loginSubtitle:"অব্যাহত ৰাখিবলৈ লগ ইন কৰক",
+    tourist:"পৰ্যটক", host:"স্থানীয় বিক্ৰেতা", guide:"গাইড", admin:"এডমিন",
+    name:"সম্পূৰ্ণ নাম", phone:"ফোন নম্বৰ", password:"পাছৱৰ্ড", address:"ঠিকনা", location:"বৰ্তমান স্থান",
+    login:"লগ ইন কৰক", continueGuest:"অতিথি হিচাপে অব্যাহত ৰাখক", logout:"লগ আউট",
+    vendorRegisterNote:"এবাৰ পঞ্জীয়ন কৰক। ইয়াৰ পিছত বুকিং নিশ্চিতকৰণ সহজ হয়/নহয় বাৰ্তা হিচাপে আহিব।",
+    yesConfirm:"✅ হয়, নিশ্চিত কৰক", noDecline:"❌ নহয়, নাকচ কৰক", waitingVendor:"⏳ বিক্ৰেতাৰ নিশ্চিতকৰণৰ বাবে অপেক্ষা কৰি আছে",
+    slogan1:"শুধু ভাৰত ভ্ৰমণ নকৰিব।", slogan2:"ইয়াৰ মানুহৰ জৰিয়তে ইয়াক অনুভৱ কৰক।",
+    getStarted:"আৰম্ভ কৰক", navHome:"হ'ম", navExplore:"ঠাই চাওক", navBookGuide:"গাইড বুক কৰক",
+    navMyBookings:"মোৰ বুকিং", navDashboard:"ডেশ্ব’ৰ্ড", guideDashTitle:"গাইড ডেশ্ব’ৰ্ড",
+    appointmentNotifications:"এপইণ্টমেণ্ট জাননী", bookGuideTitle:"স্থানীয় গাইড বুক কৰক",
+    sendGuideRequest:"গাইডলৈ অনুৰোধ পঠিয়াওক", revenueLabel:"উপাৰ্জন", selectRegion:"আপুনি ভ্ৰমণ কৰিব বিচৰা অঞ্চল বাছনি কৰক",
+    yourRequirements:"কোনো বিশেষ প্ৰয়োজন?"
+  },
+  bn: {
+    chooseLanguage:"আপনার ভাষা বেছে নিন", welcome:"Welcome · स्वागत है · आपले स्वागत आहे", loginSubtitle:"চালিয়ে যেতে লগ ইন করুন",
+    tourist:"পর্যটক", host:"স্থানীয় বিক্রেতা", guide:"গাইড", admin:"অ্যাডমিন",
+    name:"পুরো নাম", phone:"ফোন নম্বর", password:"পাসওয়ার্ড", address:"ঠিকানা", location:"বর্তমান অবস্থান",
+    login:"লগ ইন করুন", continueGuest:"অতিথি হিসেবে চালিয়ে যান", logout:"লগ আউট",
+    vendorRegisterNote:"একবার নিবন্ধন করুন। এরপর বুকিং নিশ্চিতকরণ সহজ হ্যাঁ/না বার্তা হিসেবে আসবে।",
+    yesConfirm:"✅ হ্যাঁ, নিশ্চিত করুন", noDecline:"❌ না, প্রত্যাখ্যান", waitingVendor:"⏳ বিক্রেতার নিশ্চিতকরণের অপেক্ষায়",
+    slogan1:"শুধু ভারত ভ্রমণ করবেন না।", slogan2:"এর মানুষদের মাধ্যমে একে অনুভব করুন।",
+    getStarted:"শুরু করুন", navHome:"হোম", navExplore:"জায়গা দেখুন", navBookGuide:"গাইড বুক করুন",
+    navMyBookings:"আমার বুকিং", navDashboard:"ড্যাশবোর্ড", guideDashTitle:"গাইড ড্যাশবোর্ড",
+    appointmentNotifications:"অ্যাপয়েন্টমেন্ট নোটিফিকেশন", bookGuideTitle:"স্থানীয় গাইড বুক করুন",
+    sendGuideRequest:"গাইডকে অনুরোধ পাঠান", revenueLabel:"আয়", selectRegion:"আপনি যে অঞ্চল ঘুরতে চান তা নির্বাচন করুন",
+    yourRequirements:"কোনো বিশেষ প্রয়োজন?"
+  },
+  pa: {
+    chooseLanguage:"ਆਪਣੀ ਭਾਸ਼ਾ ਚੁਣੋ", welcome:"Welcome · स्वागत है · आपले स्वागत आहे", loginSubtitle:"ਜਾਰੀ ਰੱਖਣ ਲਈ ਲੌਗਇਨ ਕਰੋ",
+    tourist:"ਸੈਲਾਨੀ", host:"ਸਥਾਨਕ ਵਿਕਰੇਤਾ", guide:"ਗਾਈਡ", admin:"ਐਡਮਿਨ",
+    name:"ਪੂਰਾ ਨਾਮ", phone:"ਫ਼ੋਨ ਨੰਬਰ", password:"ਪਾਸਵਰਡ", address:"ਪਤਾ", location:"ਮੌਜੂਦਾ ਟਿਕਾਣਾ",
+    login:"ਲੌਗਇਨ ਕਰੋ", continueGuest:"ਮਹਿਮਾਨ ਵਜੋਂ ਜਾਰੀ ਰੱਖੋ", logout:"ਲੌਗ ਆਊਟ",
+    vendorRegisterNote:"ਇੱਕ ਵਾਰ ਰਜਿਸਟਰ ਕਰੋ। ਇਸ ਤੋਂ ਬਾਅਦ ਬੁਕਿੰਗ ਪੁਸ਼ਟੀ ਸੌਖੇ ਹਾਂ/ਨਹੀਂ ਸੁਨੇਹੇ ਵਜੋਂ ਆਵੇਗੀ।",
+    yesConfirm:"✅ ਹਾਂ, ਪੁਸ਼ਟੀ ਕਰੋ", noDecline:"❌ ਨਹੀਂ, ਇਨਕਾਰ", waitingVendor:"⏳ ਵਿਕਰੇਤਾ ਦੀ ਪੁਸ਼ਟੀ ਦੀ ਉਡੀਕ ਹੈ",
+    slogan1:"ਸਿਰਫ਼ ਭਾਰਤ ਨਾ ਘੁੰਮੋ।", slogan2:"ਇਸਦੇ ਲੋਕਾਂ ਰਾਹੀਂ ਇਸਨੂੰ ਅਨੁਭਵ ਕਰੋ।",
+    getStarted:"ਸ਼ੁਰੂ ਕਰੋ", navHome:"ਹੋਮ", navExplore:"ਥਾਵਾਂ ਵੇਖੋ", navBookGuide:"ਗਾਈਡ ਬੁੱਕ ਕਰੋ",
+    navMyBookings:"ਮੇਰੀਆਂ ਬੁਕਿੰਗਾਂ", navDashboard:"ਡੈਸ਼ਬੋਰਡ", guideDashTitle:"ਗਾਈਡ ਡੈਸ਼ਬੋਰਡ",
+    appointmentNotifications:"ਅਪੌਇੰਟਮੈਂਟ ਸੂਚਨਾਵਾਂ", bookGuideTitle:"ਸਥਾਨਕ ਗਾਈਡ ਬੁੱਕ ਕਰੋ",
+    sendGuideRequest:"ਗਾਈਡ ਨੂੰ ਬੇਨਤੀ ਭੇਜੋ", revenueLabel:"ਕਮਾਈ", selectRegion:"ਤੁਸੀਂ ਜਿਹੜਾ ਖੇਤਰ ਘੁੰਮਣਾ ਚਾਹੁੰਦੇ ਹੋ ਉਹ ਚੁਣੋ",
+    yourRequirements:"ਕੋਈ ਖਾਸ ਲੋੜ?"
+  },
+  or: {
+    chooseLanguage:"ଆପଣଙ୍କ ଭାଷା ବାଛନ୍ତୁ", welcome:"Welcome · स्वागत है · आपले स्वागत आहे", loginSubtitle:"ଜାରି ରଖିବାକୁ ଲଗଇନ୍ କରନ୍ତୁ",
+    tourist:"ପର୍ଯ୍ୟଟକ", host:"ସ୍ଥାନୀୟ ବିକ୍ରେତା", guide:"ଗାଇଡ୍", admin:"ଆଡମିନ",
+    name:"ପୂରା ନାମ", phone:"ଫୋନ ନମ୍ବର", password:"ପାସୱାର୍ଡ", address:"ଠିକଣା", location:"ବର୍ତ୍ତମାନ ସ୍ଥାନ",
+    login:"ଲଗଇନ୍ କରନ୍ତୁ", continueGuest:"ଅତିଥି ଭାବରେ ଜାରି ରଖନ୍ତୁ", logout:"ଲଗ ଆଉଟ୍",
+    vendorRegisterNote:"ଥରେ ପଞ୍ଜୀକରଣ କରନ୍ତୁ। ଏହା ପରେ ବୁକିଂ ନିଶ୍ଚିତିକରଣ ସହଜ ହଁ/ନା ବାର୍ତ୍ତା ଭାବରେ ଆସିବ।",
+    yesConfirm:"✅ ହଁ, ନିଶ୍ଚିତ କରନ୍ତୁ", noDecline:"❌ ନା, ପ୍ରତ୍ୟାଖ୍ୟାନ", waitingVendor:"⏳ ବିକ୍ରେତାଙ୍କ ନିଶ୍ଚିତିକରଣ ପାଇଁ ଅପେକ୍ଷା",
+    slogan1:"କେବଳ ଭାରତ ଭ୍ରମଣ କରନ୍ତୁ ନାହିଁ।", slogan2:"ଏହାର ଲୋକଙ୍କ ମାଧ୍ୟମରେ ଏହାକୁ ଅନୁଭବ କରନ୍ତୁ।",
+    getStarted:"ଆରମ୍ଭ କରନ୍ତୁ", navHome:"ହୋମ", navExplore:"ସ୍ଥାନ ଦେଖନ୍ତୁ", navBookGuide:"ଗାଇଡ୍ ବୁକ୍ କରନ୍ତୁ",
+    navMyBookings:"ମୋର ବୁକିଂ", navDashboard:"ଡ୍ୟାସବୋର୍ଡ", guideDashTitle:"ଗାଇଡ୍ ଡ୍ୟାସବୋର୍ଡ",
+    appointmentNotifications:"ଅପଏଣ୍ଟମେଣ୍ଟ ବିଜ୍ଞପ୍ତି", bookGuideTitle:"ସ୍ଥାନୀୟ ଗାଇଡ୍ ବୁକ୍ କରନ୍ତୁ",
+    sendGuideRequest:"ଗାଇଡ୍‌ଙ୍କୁ ଅନୁରୋଧ ପଠାନ୍ତୁ", revenueLabel:"ରାଜସ୍ୱ", selectRegion:"ଆପଣ ଭ୍ରମଣ କରିବାକୁ ଚାହୁଁଥିବା ଅଞ୍ଚଳ ବାଛନ୍ତୁ",
+    yourRequirements:"କୌଣସି ନିର୍ଦ୍ଦିଷ୍ଟ ଆବଶ୍ୟକତା?"
+  },
+  ml: {
+    chooseLanguage:"നിങ്ങളുടെ ഭാഷ തിരഞ്ഞെടുക്കുക", welcome:"Welcome · स्वागत है · आपले स्वागत आहे", loginSubtitle:"തുടരാൻ ലോഗിൻ ചെയ്യുക",
+    tourist:"സഞ്ചാരി", host:"പ്രാദേശിക വിൽപ്പനക്കാരൻ", guide:"ഗൈഡ്", admin:"അഡ്മിൻ",
+    name:"മുഴുവൻ പേര്", phone:"ഫോൺ നമ്പർ", password:"പാസ്‌വേഡ്", address:"വിലാസം", location:"നിലവിലെ സ്ഥലം",
+    login:"ലോഗിൻ ചെയ്യുക", continueGuest:"അതിഥിയായി തുടരുക", logout:"ലോഗ് ഔട്ട്",
+    vendorRegisterNote:"ഒരിക്കൽ രജിസ്റ്റർ ചെയ്യുക. ഇതിനുശേഷം ബുക്കിംഗ് സ്ഥിരീകരണം എളുപ്പമുള്ള അതെ/ഇല്ല സന്ദേശമായി വരും.",
+    yesConfirm:"✅ അതെ, സ്ഥിരീകരിക്കുക", noDecline:"❌ ഇല്ല, നിരസിക്കുക", waitingVendor:"⏳ വിൽപ്പനക്കാരന്റെ സ്ഥിരീകരണത്തിനായി കാത്തിരിക്കുന്നു",
+    slogan1:"ഇന്ത്യ വെറുതെ സന്ദർശിക്കരുത്.", slogan2:"അതിന്റെ ജനങ്ങളിലൂടെ അത് അനുഭവിക്കൂ.",
+    getStarted:"ആരംഭിക്കുക", navHome:"ഹോം", navExplore:"സ്ഥലങ്ങൾ കാണുക", navBookGuide:"ഗൈഡിനെ ബുക്ക് ചെയ്യുക",
+    navMyBookings:"എന്റെ ബുക്കിംഗുകൾ", navDashboard:"ഡാഷ്‌ബോർഡ്", guideDashTitle:"ഗൈഡ് ഡാഷ്‌ബോർഡ്",
+    appointmentNotifications:"അപ്പോയിന്റ്മെന്റ് അറിയിപ്പുകൾ", bookGuideTitle:"പ്രാദേശിക ഗൈഡിനെ ബുക്ക് ചെയ്യുക",
+    sendGuideRequest:"ഗൈഡിന് അഭ്യർത്ഥന അയയ്ക്കുക", revenueLabel:"വരുമാനം", selectRegion:"നിങ്ങൾ പര്യവേക്ഷണം ചെയ്യാൻ ആഗ്രഹിക്കുന്ന പ്രദേശം തിരഞ്ഞെടുക്കുക",
+    yourRequirements:"എന്തെങ്കിലും പ്രത്യേക ആവശ്യമുണ്ടോ?"
+  },
+  ur: {
+    chooseLanguage:"اپنی زبان منتخب کریں", welcome:"Welcome · स्वागत है · आपले स्वागत आहे", loginSubtitle:"جاری رکھنے کے لیے لاگ ان کریں",
+    tourist:"سیاح", host:"مقامی فروخت کار", guide:"گائیڈ", admin:"ایڈمن",
+    name:"پورا نام", phone:"فون نمبر", password:"پاس ورڈ", address:"پتہ", location:"موجودہ مقام",
+    login:"لاگ ان کریں", continueGuest:"مہمان کے طور پر جاری رکھیں", logout:"لاگ آؤٹ",
+    vendorRegisterNote:"ایک بار رجسٹر کریں۔ اس کے بعد بکنگ کی تصدیق آسان ہاں/نہیں پیغام کے طور پر آئے گی۔",
+    yesConfirm:"✅ ہاں، تصدیق کریں", noDecline:"نہیں۔ مسترد کریں", waitingVendor:"⏳ فروخت کار کی تصدیق کا انتظار ہے",
+    slogan1:"صرف ہندوستان مت دیکھیں۔", slogan2:"اسے اس کے لوگوں کے ذریعے محسوس کریں۔",
+    getStarted:"شروع کریں", navHome:"ہوم", navExplore:"جگہیں دیکھیں", navBookGuide:"گائیڈ بک کریں",
+    navMyBookings:"میری بکنگز", navDashboard:"ڈیش بورڈ", guideDashTitle:"گائیڈ ڈیش بورڈ",
+    appointmentNotifications:"اپائنٹمنٹ اطلاعات", bookGuideTitle:"مقامی گائیڈ بک کریں",
+    sendGuideRequest:"گائیڈ کو درخواست بھیجیں", revenueLabel:"آمدنی", selectRegion:"وہ علاقہ منتخب کریں جسے آپ دیکھنا چاہتے ہیں",
+    yourRequirements:"کوئی خاص ضرورت؟"
+  }
+};
+const TRANSLATIONS = Object.fromEntries(Object.keys(LANGUAGES).map(l=>[l, Object.assign({}, TRANSLATIONS_RAW.en, TRANSLATIONS_RAW[l]||{})]));
+function t(key){ return (TRANSLATIONS[APP.uiLang] && TRANSLATIONS[APP.uiLang][key]) || TRANSLATIONS.en[key] || key; }
+
+/* ============================= APP STATE ============================= */
+const APP = {
+  view:'home', query:{}, lang:'en',
+  langChosen:false, uiLang:'en',
+  splashDone:false, drawerOpen:false, remindedBookingIds:[],
+  authRole:null, authUser:null, authRoleTab:'tourist',
+  loginForm:{name:'', contact:'', password:'', address:'', location:'Maharashtra'},
+  hostView: 'Asha Patil',
+  bookings: [],
+  favorites: [],
+  vendors: {}, guides: {}, notifications: [],
+  guideBookings: [], guideNotifications: [],
+  guideRequestForm: {state:'Maharashtra', requirements:'', date:'', time:'10:00', people:2},
+  reports: [
+    {id:'R1', text:'Host in Jaisalmer did not show up on time.', status:'open'},
+    {id:'R2', text:'Photos did not match the actual pottery workshop.', status:'open'}
+  ],
+  matcherForm: {destination:'Goa', budget:2000, time:'3', people:2, ageGroup:'Adults', interests:'food, culture', groupType:'Couple'},
+  tripForm: {destination:'Goa', days:3, budget:5000, group:'Family of 4', interests:'food, culture'},
+  matcherResults: null, matcherLoading:false,
+  tripResults: null, tripLoading:false,
+  newExpForm: {title:'', cat:'food', state:'Maharashtra', city:'', price:600, duration:2},
+  lastBooking: null,
+  touristProfiles: {},
+  touristLoc: null,
+  itineraryForm: {state:'Maharashtra', cat:'food', expId:'', date:'', time:'10:00'},
+  itineraryBuilder: [],
+  itineraries: [],
+  confessionForm: {name:'', role:'Tourist', text:'', anon:false},
+  confessions: [
+    {name:'Wei', role:'Tourist', anon:false, text:"Confession: I booked a Taj Mahal tour and skipped it for a pottery afternoon in a Bhuj village instead. Zero regrets.", date:'2026-06-02'},
+    {name:'A traveler', role:'Tourist', anon:true, text:"I was nervous meeting a host I'd never met, but the verification badge and SOS button genuinely made me feel safe.", date:'2026-05-21'},
+    {name:'Ravi More', role:'Local Host', anon:false, text:"Feedback: bookings notify me late sometimes. Otherwise this has changed how much my fishing trips earn.", date:'2026-05-15'},
+    {name:'Fatima', role:'Tourist', anon:false, text:"Skipped the crowded fort and spent the day learning block printing instead. Best decision of the trip.", date:'2026-05-02'},
+    {name:'A traveler', role:'Traveler Guide', anon:true, text:"As a guide I was skeptical at first, but this actually sends more work to hosts who really need it.", date:'2026-04-18'}
+  ]
+};
+function seedDemoBookings(){
+  const ashaExp = EXPERIENCES.find(e=>e.host==='Asha Patil' && e.cat==='food');
+  const raviExp = EXPERIENCES.find(e=>e.host==='Ravi More');
+  if(ashaExp) APP.bookings.push({id:'RTI-100234', expId:ashaExp.id, host:ashaExp.host, title:ashaExp.title, price:ashaExp.price, date:'2026-06-14', time:'10:00', people:2, status:'completed', crowdAvoided:false});
+  if(raviExp) APP.bookings.push({id:'RTI-100235', expId:raviExp.id, host:raviExp.host, title:raviExp.title, price:raviExp.price, date:'2026-07-02', time:'07:30', people:1, status:'upcoming', crowdAvoided:true});
+}
+seedDemoBookings();
+
+function seedDemoGuides(){
+  Object.entries(REGIONS).forEach(([state,info])=>{
+    const guideName = info.hosts[info.hosts.length-1] + ' (Guide)';
+    if(!APP.guides[guideName]){
+      APP.guides[guideName] = {name:guideName, phone:'98'+String(1000000+state.length*777).slice(0,8), location:state, lang:'en', demo:true, registeredAt:new Date().toISOString()};
+    }
+  });
+}
+
+/* ============================= HELPERS ============================= */
+function fmt(n){return '₹'+Math.round(n).toLocaleString('en-IN');}
+function toast(msg){
+  const el = document.createElement('div');
+  el.className='toast fade-in';
+  el.textContent = msg;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(()=>{ el.style.opacity='0'; el.style.transition='opacity .4s'; setTimeout(()=>el.remove(),400); }, 3200);
+}
+function navigate(view, query){
+  let h = '#'+view;
+  if(query && Object.keys(query).length){ h += '?' + new URLSearchParams(query).toString(); }
+  location.hash = h;
+  window.scrollTo(0,0);
+}
+function handleRoute(){
+  const raw = location.hash.slice(1) || 'home';
+  const [view, qs] = raw.split('?');
+  APP.view = view || 'home';
+  APP.query = Object.fromEntries(new URLSearchParams(qs||''));
+  render();
+}
+window.addEventListener('hashchange', handleRoute);
+function breakdown(price){
+  return {host: price*0.85, platform: price*0.10, community: price*0.05};
+}
+
+/* ============================= LANGUAGE GATE & LOGIN ============================= */
+function chooseLanguage(lang){
+  APP.uiLang = lang;
+  APP.langChosen = true;
+  if(!APP.authRole){
+    APP.view = 'login';
+    navigate('login');
+  }
+  render();
+}
+
+function warliArt(){
+  const figure = (cx,cy,scale,rot)=>`
+    <g transform="translate(${cx},${cy}) rotate(${rot}) scale(${scale})" stroke="var(--indigo-deep)" stroke-width="2.4" fill="none" stroke-linecap="round">
+      <circle cx="0" cy="-13" r="4" fill="var(--indigo-deep)" stroke="none"/>
+      <path d="M0,-9 L0,6"/>
+      <path d="M0,-4 L-9,-9 M0,-4 L9,-9"/>
+      <path d="M0,6 L-8,18 M0,6 L8,18"/>
+    </g>`;
+  const N=10, R=92, figs=[];
+  for(let i=0;i<N;i++){ const a=(i/N)*2*Math.PI; figs.push(figure(150+R*Math.cos(a),110+R*Math.sin(a)*0.62,1,(a*180/Math.PI)+90)); }
+  return `
+  <svg viewBox="0 0 300 230" class="w-full h-auto" style="max-width:340px" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="150" cy="110" r="93" fill="none" stroke="var(--turmeric)" stroke-width="1.5" stroke-dasharray="3 5" opacity="0.6"/>
+    <circle cx="150" cy="30" r="13" fill="none" stroke="var(--madder)" stroke-width="2.5"/>
+    ${Array.from({length:12}).map((_,i)=>{const a=i*30*Math.PI/180; const x1=150+16*Math.cos(a),y1=30+16*Math.sin(a),x2=150+23*Math.cos(a),y2=30+23*Math.sin(a); return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--madder)" stroke-width="2" stroke-linecap="round"/>`}).join('')}
+    <path d="M150,150 L150,205 M150,205 L138,222 M150,205 L162,222 M150,175 L128,160 M150,175 L172,160 M150,190 L124,205 M150,190 L176,205" stroke="var(--palm)" stroke-width="3" fill="none" stroke-linecap="round"/>
+    ${figs.join('')}
+  </svg>`;
+}
+function renderLangGate(){
+  return `
+  <div class="min-h-screen kolam-bg px-5 py-10 flex flex-col items-center justify-center gap-10" style="min-height:100vh;">
+    <div class="text-center max-w-3xl">
+      <div class="flex justify-center mb-4">${warliArt()}</div>
+      <div class="font-display font-extrabold text-indigo-deep leading-[1.05]" style="font-size:clamp(2.1rem,6vw,4rem);">
+        Don't Just Visit India.<br><span class="text-madder">Experience It.</span>
+      </div>
+      <div class="text-xs uppercase tracking-widest opacity-50 mt-3">Inspired by Warli — India's ancient tribal art</div>
+    </div>
+    <div class="card p-8 max-w-md w-full text-center fade-in">
+      <div class="text-4xl mb-2">🧡</div>
+      <div class="font-display text-lg font-bold text-indigo-deep">Welcome · स्वागत है · आपले स्वागत आहे</div>
+      <div class="font-display text-xl font-bold text-indigo-deep mt-5 leading-snug">Choose your language<br>अपनी भाषा चुनें<br>तुमची भाषा निवडा</div>
+      <div class="opacity-70 text-sm mt-2">Select the language you'd like to use — for tourists, community hosts, and guides. Your whole experience will continue in this language.</div>
+      <div class="grid grid-cols-2 gap-2.5 mt-7 text-sm">
+        ${Object.keys(LANGUAGES).map(l=>`<button class="btn-primary !py-2" onclick="chooseLanguage('${l}')">${LANGUAGES[l].native}</button>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+function renderLogin(){
+  const t = TRANSLATIONS[APP.uiLang];
+  const role = APP.authRoleTab || 'tourist';
+  const lf = APP.loginForm;
+  const roleLabel = {tourist:t.tourist, host:t.host, guide:t.guide};
+  return `
+  <div class="min-h-screen flex items-center justify-center kolam-bg px-5 py-10" style="min-height:100vh;">
+    <div class="card p-8 max-w-md w-full fade-in">
+      <div class="text-center mb-5">
+        <div class="text-3xl mb-1">🧡</div>
+        <div class="font-display text-xl font-bold text-indigo-deep">${t.welcome}</div>
+        <div class="opacity-70 text-sm mt-1">${t.loginSubtitle}</div>
+      </div>
+      <div class="flex gap-2 mb-5 flex-wrap">
+        ${['tourist','host','guide'].map(r=>`<button class="chip flex-1 !text-center ${role===r?'active':''}" onclick="APP.authRoleTab='${r}';render();">${roleLabel[r]}</button>`).join('')}
+      </div>
+      <div class="text-[11px] text-madder text-center -mt-1 mb-3">* All fields are required</div>
+      <div class="grid grid-cols-2 gap-3">
+        <input type="text" placeholder="${t.name} *" value="${lf.name}" onchange="APP.loginForm.name=this.value" oninput="APP.loginForm.name=this.value">
+        <input type="text" placeholder="${t.phone} / ${t.email} *" value="${lf.contact}" onchange="APP.loginForm.contact=this.value" oninput="APP.loginForm.contact=this.value">
+        <input class="col-span-2" type="password" placeholder="${t.password} *" value="${lf.password}" onchange="APP.loginForm.password=this.value" oninput="APP.loginForm.password=this.value">
+        ${role==='host' ? `<input class="col-span-2" type="text" placeholder="${t.address} *" value="${lf.address}" onchange="APP.loginForm.address=this.value" oninput="APP.loginForm.address=this.value">` : ''}
+        ${role==='guide' ? `<div class="col-span-2"><label class="text-xs font-semibold opacity-70 block mb-1">${t.location} *</label><select onchange="APP.loginForm.location=this.value">${Object.keys(REGIONS).map(s=>`<option ${lf.location===s?'selected':''}>${s}</option>`).join('')}</select></div>` : ''}
+        <button type="button" class="col-span-2 btn-primary w-full" onclick="doLogin('${role}')">${t.login} — ${roleLabel[role]}</button>
+      </div>
+      ${role==='host' ? `<div class="text-xs opacity-60 text-center mt-3 bg-sandstone rounded-lg p-2">📱 ${t.vendorRegisterNote}</div>` : ''}
+      ${role==='host' ? `<div class="text-xs opacity-60 text-center mt-2 bg-sandstone rounded-lg p-2">📍 We'll ask for your location on login so tourists can find you.</div>` : ''}
+      <div class="text-xs opacity-60 text-center mt-4">${t.newHere}</div>
+      <div class="text-center mt-4">
+        <span class="text-xs underline cursor-pointer opacity-70" onclick="APP.langChosen=false;render();">⟵ ${t.chooseLanguage}</span>
+      </div>
+    </div>
+  </div>`;
+}
+function doLogin(role){
+  const lf = APP.loginForm;
+  if(!lf.name.trim() || !lf.password.trim()){ toast('Please enter your name and password to log in.'); return; }
+  APP.authRole = role;
+  APP.authUser = lf.name.trim();
+  if(role==='host'){
+    APP.hostView = EXPERIENCES.some(e=>e.host===APP.authUser) ? APP.authUser : APP.hostView;
+    registerVendor({name:APP.authUser, phone:lf.contact.trim(), address:lf.address.trim(), lang:APP.uiLang});
+  }
+  let guideIsFirstLogin = false;
+  if(role==='guide'){
+    guideIsFirstLogin = !APP.guides[APP.authUser] || !APP.guides[APP.authUser].profileComplete;
+    registerGuide({name:APP.authUser, phone:lf.contact.trim(), location:lf.location.trim(), lang:APP.uiLang});
+  }
+  toast(`Welcome, ${APP.authUser}! 🎉`);
+  navigate(role==='host'?'hostdashboard':role==='guide'?'guideupcoming':'home');
+  if(role==='host'){
+    setTimeout(()=>shareVendorLocation(true), 600);
+  }
+  if(role==='guide' && guideIsFirstLogin){
+    setTimeout(()=>toast('👋 Welcome! Please set up your profile and fill in your guiding experience.'), 900);
+  }
+}
+function logout(){
+  APP.authRole = null;
+  APP.authUser = null;
+  APP.loginForm = {name:'', contact:'', password:'', address:'', location:'Maharashtra'};
+  APP.view = 'login';
+  navigate('login');
+  render();
+}
+
+/* ============================= BACKEND: FIREBASE FIRESTORE ============================= */
+// TODO: paste YOUR OWN Firebase project config here.
+// Firebase console -> Project settings -> General -> "Your apps" -> SDK setup and configuration.
+// Using the classic script-tag SDK (loaded in <head>) instead of ES module imports so this
+// keeps working when the file is opened directly (file://) as well as when it's hosted.
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+let db = null;
+let firebaseReady = false;
+try{
+  if(typeof firebase !== 'undefined' && firebaseConfig.apiKey !== 'YOUR_API_KEY'){
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+    firebaseReady = true;
+  } else {
+    console.warn('Firebase config not filled in yet — running in local-only demo mode (nothing will be saved between visits). See firebaseConfig near the top of the script.');
+  }
+}catch(err){ console.error('Firebase init failed', err); }
+
+const PERSIST_KEYS = ['vendors','guides','notifications','bookings','guideNotifications','guideBookings','confessions','itineraries','touristProfiles'];
+
+async function persist(key, value){
+  if(!db) return; // local-only mode: state just lives in memory for this session
+  try{
+    await db.collection('appdata').doc(key).set({
+      value: JSON.stringify(value),
+      updatedAt: new Date().toISOString()
+    });
+  }catch(err){ console.error('Firestore save failed', key, err); toast('⚠️ Could not save to the server — check your connection.'); }
+}
+
+async function loadBackend(){
+  if(db){
+    try{
+      const snap = await db.collection('appdata').get();
+      snap.forEach(doc=>{
+        if(!PERSIST_KEYS.includes(doc.id)) return;
+        let val;
+        try{ val = JSON.parse(doc.data().value); }catch(e){ return; }
+        if(doc.id==='vendors') APP.vendors = val;
+        else if(doc.id==='guides') APP.guides = val;
+        else if(doc.id==='notifications') APP.notifications = val;
+        else if(doc.id==='bookings' && val && val.length) APP.bookings = val;
+        else if(doc.id==='guideNotifications') APP.guideNotifications = val;
+        else if(doc.id==='guideBookings') APP.guideBookings = val;
+        else if(doc.id==='confessions' && val && val.length) APP.confessions = val;
+        else if(doc.id==='itineraries' && val && val.length) APP.itineraries = val;
+        else if(doc.id==='touristProfiles') APP.touristProfiles = val;
+      });
+    }catch(err){
+      console.error('Firestore load failed, using local demo data instead.', err);
+      toast('⚠️ Could not reach the server — showing local demo data.');
+    }
+  }
+  seedDemoGuides();
+  render();
+}
+
+/* Ask the browser for the vendor's real GPS location and save it to Firestore.
+   Requires the page to be served over https (or localhost) — geolocation is
+   blocked on plain http and usually on file:// too, for privacy reasons. */
+function friendlyGeoError(err){
+  const msg = (err && err.message) || '';
+  if(err && err.code===1 || /permissions policy|not allowed|denied|disabled/i.test(msg)){
+    return "📍 Location is blocked in this preview window. Open this page in its own browser tab (not embedded) and allow location access when prompted — it'll work there.";
+  }
+  if(err && err.code===2){ return "Couldn't determine your location right now — please try again in a moment."; }
+  if(err && err.code===3){ return "Location request timed out — please try again."; }
+  return 'Could not get your location: ' + (msg || 'unknown error');
+}
+function shareVendorLocation(silent){
+  if(!navigator.geolocation){ if(!silent) toast('Location is not supported on this device/browser.'); return; }
+  if(!silent) toast('Requesting your location…');
+  try{
+    navigator.geolocation.getCurrentPosition(
+      pos=>{
+        const {latitude, longitude} = pos.coords;
+        registerVendor({name: APP.authUser, lat: latitude, lng: longitude});
+        toast('📍 Location saved — tourists and admins can now see where you are.');
+        render();
+      },
+      err=>{ toast(friendlyGeoError(err)); },
+      {enableHighAccuracy:true, timeout:10000}
+    );
+  }catch(err){
+    toast(friendlyGeoError(err));
+  }
+}
+function registerVendor(profile){
+  if(!profile.name) return;
+  APP.vendors[profile.name] = Object.assign({}, APP.vendors[profile.name]||{}, profile, {registeredAt: new Date().toISOString()});
+  persist('vendors', APP.vendors);
+}
+/* Great-circle distance in km between two lat/lng points. */
+function distanceKm(lat1,lng1,lat2,lng2){
+  const toRad = d => d*Math.PI/180;
+  const R = 6371;
+  const dLat = toRad(lat2-lat1), dLng = toRad(lng2-lng1);
+  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+/* Given a crowded state, find nearby states that are medium/low crowd,
+   sorted by distance — used to power the "go here instead" map panel. */
+function lessCrowdedNearby(state, limit){
+  const here = REGIONS[state];
+  if(!here) return [];
+  const [lat1,lng1] = here.latlng;
+  return Object.entries(REGIONS)
+    .filter(([s,info])=> s!==state && info.crowd!=='high')
+    .map(([s,info])=>({state:s, famous:info.famous, crowd:info.crowd, dist: distanceKm(lat1,lng1, info.latlng[0], info.latlng[1])}))
+    .sort((a,b)=>a.dist-b.dist)
+    .slice(0, limit||3);
+}
+/* Ask the tourist's browser for their location so we can show them how far
+   each host is and sort experiences by distance. */
+function findNearMe(){
+  if(!navigator.geolocation){ toast('Location is not supported on this device/browser.'); return; }
+  toast('📍 Finding community hosts near you…');
+  try{
+    navigator.geolocation.getCurrentPosition(
+      pos=>{
+        APP.touristLoc = {lat: pos.coords.latitude, lng: pos.coords.longitude};
+        toast('Sorted by distance to you ✅');
+        render();
+      },
+      err=>{ toast(friendlyGeoError(err)); },
+      {enableHighAccuracy:true, timeout:10000}
+    );
+  }catch(err){
+    toast(friendlyGeoError(err));
+  }
+}
+function clearNearMe(){
+  APP.touristLoc = null;
+  render();
+}
+function registerGuide(profile){
+  if(!profile.name) return;
+  APP.guides[profile.name] = Object.assign({}, APP.guides[profile.name]||{}, profile, {registeredAt: new Date().toISOString()});
+  persist('guides', APP.guides);
+}
+
+/* ============================= VENDOR BOOKING NOTIFICATIONS ============================= */
+function notifyVendor(booking, exp){
+  const vendor = APP.vendors[exp.host];
+  const notif = {
+    id: 'N'+Date.now().toString().slice(-7), bookingId: booking.id, vendorName: exp.host,
+    people: booking.people, date: booking.date, time: booking.time,
+    amount: Math.round(booking.price*0.85), title: exp.title,
+    lang: (vendor && vendor.lang) || 'en', phone: vendor ? vendor.phone : '',
+    status: 'pending', createdAt: new Date().toISOString()
+  };
+  APP.notifications.push(notif);
+  persist('notifications', APP.notifications);
+  return notif;
+}
+function vendorRespond(notifId, accepted){
+  const notif = APP.notifications.find(n=>n.id===notifId);
+  if(!notif) return;
+  notif.status = accepted ? 'accepted' : 'declined';
+  notif.respondedAt = new Date().toISOString();
+  const booking = APP.bookings.find(b=>b.id===notif.bookingId);
+  if(booking) booking.status = accepted ? 'upcoming' : 'declined';
+  persist('notifications', APP.notifications);
+  persist('bookings', APP.bookings);
+  toast(accepted ? 'Booking confirmed ✅ — the tourist has been notified.' : 'Booking declined — the tourist has been notified.');
+  render();
+}
+function waMessageText(notif, t){
+  return `🧡 ${t.bookingReqTitle}: ${notif.title}\n${notif.people} ${t.bookingReqBody} · ${notif.date} ${t.bookingReqAt} ${notif.time}\n${t.bookingReqAmount}: ${fmt(notif.amount)}`;
+}
+
+/* ============================= GUIDE BOOKING NOTIFICATIONS ============================= */
+function pickGuideForRegion(region){
+  const matches = Object.values(APP.guides).filter(g=>g.location===region);
+  if(!matches.length) return null;
+  const real = matches.find(g=>!g.demo);
+  return real || matches[0];
+}
+function notifyGuide(booking){
+  const guide = pickGuideForRegion(booking.region);
+  const notif = {
+    id:'GN'+Date.now().toString().slice(-7), bookingId:booking.id, guideName: guide?guide.name:null,
+    touristName: booking.touristName, region: booking.region, requirements: booking.requirements,
+    people: booking.people, date: booking.date, time: booking.time,
+    lang: (guide && guide.lang) || 'en', phone: guide ? guide.phone : '',
+    status:'pending', createdAt:new Date().toISOString()
+  };
+  APP.guideNotifications.push(notif);
+  persist('guideNotifications', APP.guideNotifications);
+  return notif;
+}
+function guideRespond(notifId, accepted){
+  const notif = APP.guideNotifications.find(n=>n.id===notifId);
+  if(!notif) return;
+  notif.status = accepted ? 'accepted' : 'declined';
+  notif.respondedAt = new Date().toISOString();
+  const booking = APP.guideBookings.find(b=>b.id===notif.bookingId);
+  if(booking) booking.status = accepted ? 'upcoming' : 'declined';
+  persist('guideNotifications', APP.guideNotifications);
+  persist('guideBookings', APP.guideBookings);
+  toast(accepted ? 'Appointment confirmed ✅ — the tourist has been notified.' : 'Request declined — the tourist has been notified.');
+  render();
+}
+function submitGuideRequest(){
+  const f = APP.guideRequestForm;
+  if(!f.date){ toast('Please select a preferred date first.'); return; }
+  const guide = pickGuideForRegion(f.state);
+  const booking = {
+    id:'RTG-'+Date.now().toString().slice(-6), region:f.state, requirements:f.requirements.trim(),
+    touristName: APP.authUser || 'Guest Tourist', guideName: guide?guide.name:null,
+    date:f.date, time:f.time, people:Number(f.people)||1, status:'pending_guide_confirmation'
+  };
+  APP.guideBookings.push(booking);
+  persist('guideBookings', APP.guideBookings);
+  notifyGuide(booking);
+  toast(t('guideRequestSent'));
+  navigate('touristdashboard');
+}
+async function callClaude(userPrompt, systemPrompt, maxTokens){
+  try{
+    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({
+        model:"claude-sonnet-4-6",
+        max_tokens: maxTokens || 800,
+        system: systemPrompt,
+        messages:[{role:"user", content: userPrompt}]
+      })
+    });
+    const data = await resp.json();
+    const text = (data.content||[]).map(b=>b.text||'').join('\n');
+    return text || null;
+  }catch(e){ console.error('AI call failed', e); return null; }
+}
+function extractJSON(text){
+  if(!text) return null;
+  try{ return JSON.parse(text.replace(/```json|```/g,'').trim()); }
+  catch(e){ console.error('JSON parse failed', e); return null; }
+}
+/* Note: callClaude() above calls api.anthropic.com directly from the browser.
+   That only works inside Claude.ai's own artifact sandbox (which proxies the
+   call). On a real hosted site it will fail (no API key, and the browser's
+   CORS policy blocks it). It's left in place but unused by any view below —
+   wire it up behind your own backend if you want AI features later. */
+
+/* ============================= NAVIGATION BAR ============================= */
+function computeNavLinks(tr, role){
+  let links;
+  if(role==='host'){
+    links = [
+      {id:'hostdashboard', label:tr.navHome, show:true},
+      {id:'hostrevenue', label:'Revenue', show:true},
+      {id:'hostreviews', label:'My Reviews/Feedback', show:true},
+      {id:'hostupcoming', label:'Upcoming', show:true},
+      {id:'hostnotifications', label:'Notifications', show:true}
+    ];
+  } else if(role==='guide'){
+    links = [
+      {id:'guiderevenue', label:'Revenue', show:true},
+      {id:'guidereviews', label:'My Reviews/Feedback', show:true},
+      {id:'guideupcoming', label:'Upcoming Bookings', show:true},
+      {id:'itinerary', label:'Build Itinerary', show:true}
+    ];
+  } else {
+    links = [
+      {id:'home', label:tr.navHome, show:true},
+      {id:'explore', label:tr.navExplore, show:true},
+      {id:'itinerary', label:'Build Itinerary', show:true},
+      {id:'bookguide', label:tr.navBookGuide, show:!role || role==='tourist'},
+      {id:'touristdashboard', label:tr.navMyBookings, show:role==='tourist'},
+      {id:'feedback', label:tr.navFeedback, show:true}
+    ];
+  }
+  return links.filter(l=>l.show);
+}
+function renderNav(active){
+  const tr = TRANSLATIONS[APP.uiLang];
+  const role = APP.authRole;
+  const links = computeNavLinks(tr, role);
+  return `
+  <div class="bg-header-light sticky top-0 z-40">
+    <div class="max-w-6xl mx-auto px-5 py-3 flex items-center justify-between flex-wrap gap-3">
+      <div class="font-display font-extrabold text-indigo-deep text-lg cursor-pointer" onclick="navigate('${role?(role==='host'?'hostdashboard':role==='guide'?'guideupcoming':'home'):'home'}')">🧡 Anubhav</div>
+      <div class="flex items-center gap-4 flex-wrap text-sm">
+        ${links.map(l=>`<span class="navlink ${active===l.id?'active':''} text-indigo-deep ${active===l.id?'':'opacity-70'}" onclick="navigate('${l.id}')">${l.label}</span>`).join('')}
+        ${APP.authUser ? `<span class="text-xl leading-none cursor-pointer ${active==='profile'?'opacity-100':'opacity-70'}" title="My Profile" onclick="navigate('profile')">👤</span>` : ''}
+        ${APP.authUser ? `<span class="chip" onclick="logout()">${tr.logout} · ${APP.authUser}</span>` : `<span class="chip active" onclick="navigate('login')">${tr.login}</span>`}
+        <div class="hamburger" title="Dashboard menu" onclick="toggleDrawer()"><span></span><span></span><span></span></div>
+      </div>
+    </div>
+  </div>
+  <div class="motif-strip"></div>
+  ${APP.drawerOpen ? renderDrawer(active) : ''}`;
+}
+function toggleDrawer(){ APP.drawerOpen = !APP.drawerOpen; render(); }
+function renderDrawer(active){
+  const tr = TRANSLATIONS[APP.uiLang];
+  const role = APP.authRole;
+  const links = computeNavLinks(tr, role);
+  const roleTitle = role==='host'?tr.host : role==='guide'?tr.guide : role==='admin'?tr.admin : tr.tourist;
+  return `
+  <div id="drawerOverlay" onclick="toggleDrawer()"></div>
+  <div id="drawer" class="fade-in">
+    <div class="flex justify-between items-center mb-4">
+      <div class="font-display font-bold text-indigo-deep">${roleTitle} ${tr.navDashboard||'Dashboard'}</div>
+      <span class="cursor-pointer text-xl" onclick="toggleDrawer()">✕</span>
+    </div>
+    ${links.map(l=>`<div class="drawer-link ${active===l.id?'font-bold':''}" onclick="toggleDrawer();navigate('${l.id}')">${l.label}</div>`).join('')}
+    ${APP.authUser ? `<div class="drawer-link" onclick="toggleDrawer();navigate('profile')">👤 My Profile</div>` : ''}
+    ${APP.authUser ? `<div class="drawer-link" onclick="toggleDrawer();logout()">${tr.logout}</div>` : `<div class="drawer-link" onclick="toggleDrawer();navigate('login')">${tr.login}</div>`}
+  </div>`;
+}
+
+/* ============================= HOME ============================= */
+function renderHome(){
+  const tr = TRANSLATIONS[APP.uiLang];
+  const featured = EXPERIENCES.slice().sort((a,b)=>b.rating-a.rating).slice(0,6);
+  return `
+  ${renderNav('home')}
+  <div class="kolam-bg px-5 py-14 text-center">
+    <div class="font-display font-extrabold text-indigo-deep leading-tight" style="font-size:clamp(1.8rem,5vw,3rem);">${tr.slogan1}<br><span class="text-madder">${tr.slogan2}</span></div>
+    <div class="opacity-70 max-w-xl mx-auto mt-3">${tr.heroSub}</div>
+    <div class="max-w-xl mx-auto mt-6 card p-3 flex gap-2 flex-wrap">
+      <input id="searchDest" type="text" placeholder="${tr.searchDest}" class="flex-1">
+      <button class="btn-primary" onclick="doSearch()">${tr.search}</button>
+    </div>
+    <div class="mt-5">
+      <button class="btn-dark" onclick="navigate('explore')">${tr.getStarted}</button>
+    </div>
+  </div>
+  <div class="max-w-6xl mx-auto px-5 py-10">
+    <div class="flex justify-between items-center mb-5">
+      <div class="font-display text-xl font-bold text-indigo-deep">${tr.featuredTitle}</div>
+      <span class="text-sm underline cursor-pointer text-indigo-deep" onclick="navigate('explore')">${tr.viewAll}</span>
+    </div>
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      ${featured.map(e=>expCard(e)).join('')}
+    </div>
+  </div>`;
+}
+function expCard(e, distKm){
+  return `
+  <div class="card overflow-hidden cursor-pointer" onclick="navigate('experience',{id:'${e.id}'})">
+    <div class="photo-tile-wrap">
+      <img class="photo-tile" loading="lazy" src="${catPhoto(e.cat)}" alt="${e.title}">
+      <div class="photo-emoji-badge">${e.icon}</div>
+    </div>
+    <div class="p-4">
+      <div class="flex justify-between items-start gap-2">
+        <div class="font-display font-bold text-indigo-deep text-sm leading-snug">${e.title}</div>
+        ${e.verified?`<span class="badge-verified whitespace-nowrap">✓ Verified</span>`:''}
+      </div>
+      <div class="text-xs opacity-60 mt-1">${e.city}, ${e.state}${typeof distKm==='number' ? ` · 📍 ${distKm.toFixed(1)} km away` : ''}</div>
+      <div class="flex justify-between items-center mt-3">
+        <div class="text-sm">⭐ ${e.rating} <span class="opacity-50">(${e.reviewCount})</span></div>
+        <div class="font-bold text-madder">${fmt(e.price)}</div>
+      </div>
+    </div>
+  </div>`;
+}
+function doSearch(){
+  const el = document.getElementById('searchDest');
+  const v = el ? el.value.trim() : '';
+  navigate('explore', v?{q:v}:{});
+}
+
+/* ============================= EXPLORE ============================= */
+function renderExplore(){
+  const tr = TRANSLATIONS[APP.uiLang];
+  const q = (APP.query.q||'').toLowerCase();
+  let list = EXPERIENCES.filter(e=> !q || e.state.toLowerCase().includes(q) || e.city.toLowerCase().includes(q) || e.cat.includes(q) || e.title.toLowerCase().includes(q));
+  const loc = APP.touristLoc;
+  let distFor = null;
+  if(loc){
+    distFor = e => {
+      const v = APP.vendors[e.host];
+      return (v && typeof v.lat==='number') ? distanceKm(loc.lat, loc.lng, v.lat, v.lng) : null;
+    };
+    list = list.slice().sort((a,b)=>{
+      const da = distFor(a), db = distFor(b);
+      if(da==null && db==null) return 0;
+      if(da==null) return 1;
+      if(db==null) return -1;
+      return da - db;
+    });
+  }
+  return `
+  ${renderNav('explore')}
+  <div class="max-w-6xl mx-auto px-5 py-8">
+    <div class="flex justify-between items-start flex-wrap gap-3 mb-1">
+      <div class="font-display text-xl font-bold text-indigo-deep">${tr.whatExperience}</div>
+      ${loc ? `<button class="btn-outline text-xs" onclick="clearNearMe()">✕ Clear location · sorted by distance</button>` : `<button class="btn-outline text-xs" onclick="findNearMe()">📍 Find experiences near me</button>`}
+    </div>
+    <div class="opacity-60 text-sm mb-5">${list.length} experiences${q?` for "${q}"`:''}</div>
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      ${list.map(e=>expCard(e, distFor ? distFor(e) : undefined)).join('') || `<div class="opacity-60 col-span-full">${tr.noneYet}</div>`}
+    </div>
+  </div>`;
+}
+
+/* ============================= EXPERIENCE DETAIL + BOOKING ============================= */
+function renderExperienceView(){
+  const e = EXPERIENCES.find(x=>x.id===APP.query.id);
+  if(!e) return renderExplore();
+  const tr = TRANSLATIONS[APP.uiLang];
+  const vendor = APP.vendors[e.host] || {};
+  const hasGeo = typeof vendor.lat==='number';
+  const dist = (hasGeo && APP.touristLoc) ? distanceKm(APP.touristLoc.lat, APP.touristLoc.lng, vendor.lat, vendor.lng) : null;
+  return `
+  ${renderNav('explore')}
+  <div class="max-w-3xl mx-auto px-5 py-8 fade-in">
+    <div class="photo-tile-wrap">
+      <img class="photo-tile-lg" src="${catPhoto(e.cat)}" alt="${e.title}">
+      <div class="photo-emoji-badge" style="font-size:1.6rem;width:44px;height:44px;">${e.icon}</div>
+    </div>
+    <div class="mt-5 flex justify-between items-start flex-wrap gap-3">
+      <div>
+        <div class="font-display text-2xl font-bold text-indigo-deep">${e.title}</div>
+        <div class="opacity-60 text-sm mt-1">${e.city}, ${e.state} · ${tr.hostedBy} ${e.host} ${e.verified?'<span class="badge-verified">✓ Verified</span>':''}</div>
+        <div class="text-sm mt-1">⭐ ${e.rating} <span class="opacity-50">(${e.reviewCount} ${tr.reviewsLabel.toLowerCase()})</span></div>
+      </div>
+      <div class="text-right">
+        <div class="font-bold text-2xl text-madder">${fmt(e.price)}</div>
+        <div class="text-xs opacity-60">${tr.perPerson} · ${e.duration}h · ${tr.maxGroupLabel} ${e.maxGroup}</div>
+      </div>
+    </div>
+    <div class="card p-3 mt-4 flex justify-between items-center flex-wrap gap-2 text-sm">
+      <span>📍 ${hasGeo ? `${tr.exactLocationShared}${dist!=null?` · ${dist.toFixed(1)} ${tr.kmFromYou}`:''}` : tr.noExactLocation + ' ' + e.city + ', ' + e.state}</span>
+      ${hasGeo ? `<a class="btn-outline !py-1.5 !px-3 text-xs" target="_blank" rel="noopener" href="https://www.google.com/maps?q=${vendor.lat},${vendor.lng}">${tr.openInMaps} ↗</a>` : (APP.touristLoc ? '' : `<button class="btn-outline !py-1.5 !px-3 text-xs" onclick="findNearMe()">📍 ${tr.useMyLocation}</button>`)}
+    </div>
+    ${renderCrowdPanel(e)}
+    <div class="mt-5 opacity-80 leading-relaxed">${e.story}</div>
+    <div class="mt-5">
+      <div class="font-display font-bold text-indigo-deep mb-2">${tr.youllLearn}</div>
+      <ul class="list-disc pl-5 text-sm opacity-80 space-y-1">${e.learn.map(l=>`<li>${l}</li>`).join('')}</ul>
+    </div>
+    <div class="mt-5">
+      <div class="font-display font-bold text-indigo-deep mb-2">${tr.reviewsLabel}</div>
+      <div class="space-y-2">${e.reviews.map(r=>`<div class="card p-3 text-sm"><b>${r.user}</b> · ⭐${r.rating}<div class="opacity-70 mt-1">${r.text}</div></div>`).join('')}</div>
+    </div>
+    <div class="card p-5 mt-6 stitch">
+      <div class="font-display font-bold text-indigo-deep mb-3">${tr.bookThisExp}</div>
+      <div class="grid grid-cols-3 gap-3">
+        <div><label class="text-xs font-semibold opacity-70 block mb-1">${tr.dateLabel} *</label><input type="date" id="bookDate"></div>
+        <div><label class="text-xs font-semibold opacity-70 block mb-1">${tr.timeLabel} *</label><input type="text" id="bookTime" value="10:00"></div>
+        <div><label class="text-xs font-semibold opacity-70 block mb-1">${tr.peopleLabel} *</label><input type="number" id="bookPeople" value="2" min="1" max="${e.maxGroup}"></div>
+      </div>
+      <button class="btn-primary w-full mt-4" onclick="bookExperience('${e.id}')">${tr.requestBooking}</button>
+    </div>
+  </div>`;
+}
+/* ============================= CROWD MAP (live location + less-crowded alternatives) ============================= */
+function renderCrowdPanel(e){
+  const info = REGIONS[e.state];
+  if(!info) return '';
+  const tr = TRANSLATIONS[APP.uiLang];
+  if(info.crowd !== 'high'){
+    return `<div class="card p-3 mt-3 text-sm flex items-center gap-2"><span class="badge-crowd-low">🟢</span><span class="opacity-70">${e.city}, ${e.state} ${tr.lowCrowd}</span></div>`;
+  }
+  const alts = lessCrowdedNearby(e.state, 3);
+  const altListHtml = alts.map(a=>`
+    <div class="crowd-alt-row">
+      <span><span class="dot-green"></span>${a.state} <span class="opacity-60">— ${a.famous}</span></span>
+      <span class="opacity-70">${a.dist.toFixed(0)} km · <span class="cursor-pointer text-indigo-deep underline" onclick="navigate('explore',{q:'${a.state.replace(/'/g,"")}'})">view</span></span>
+    </div>`).join('');
+  return `
+  <div class="card p-4 mt-3">
+    <div class="flex items-center justify-between flex-wrap gap-2 mb-2">
+      <span class="badge-crowd-high">🔴 ${tr.crowdedNow}</span>
+      <button class="btn-outline !py-1 !px-2 text-xs" onclick="findNearMe()">📍 ${tr.syncMyLocation}</button>
+    </div>
+    <div id="crowdMap" data-exp-id="${e.id}"></div>
+    <div class="text-xs opacity-60 mt-2">🔴 red pin = ${e.city}, ${e.state} (crowded) · 🟢 green pins = nearby, less-crowded places you could go instead</div>
+    <div class="mt-3">
+      <div class="font-semibold text-sm text-indigo-deep mb-1">${tr.nearbyLessCrowded}</div>
+      ${altListHtml || `<div class="opacity-60 text-sm">${tr.noNearbyAlt}</div>`}
+    </div>
+  </div>`;
+}
+let _leafletMap = null;
+function initCrowdMap(){
+  const el = document.getElementById('crowdMap');
+  if(!el || typeof L === 'undefined') return;
+  const expId = el.getAttribute('data-exp-id');
+  const e = EXPERIENCES.find(x=>x.id===expId);
+  if(!e) return;
+  const info = REGIONS[e.state];
+  const vendor = APP.vendors[e.host] || {};
+  const hasGeo = typeof vendor.lat === 'number';
+  const center = APP.touristLoc ? [APP.touristLoc.lat, APP.touristLoc.lng] : (hasGeo ? [vendor.lat, vendor.lng] : info.latlng);
+  if(_leafletMap){ _leafletMap.remove(); _leafletMap = null; }
+  _leafletMap = L.map('crowdMap', {zoomControl:false, attributionControl:true}).setView(center, 6);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:18, attribution:'© OpenStreetMap'}).addTo(_leafletMap);
+  const redIcon = L.divIcon({className:'', html:'<div style="width:16px;height:16px;border-radius:50%;background:#B23A2E;border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);"></div>', iconSize:[16,16]});
+  const greenIcon = L.divIcon({className:'', html:'<div style="width:14px;height:14px;border-radius:50%;background:#3F6B4D;border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);"></div>', iconSize:[14,14]});
+  const here = hasGeo ? [vendor.lat, vendor.lng] : info.latlng;
+  L.marker(here, {icon:redIcon}).addTo(_leafletMap).bindPopup(`🔴 ${e.city}, ${e.state} — crowded`);
+  const alts = lessCrowdedNearby(e.state, 3);
+  const bounds = [here];
+  alts.forEach(a=>{
+    const c = REGIONS[a.state].latlng;
+    L.marker(c, {icon:greenIcon}).addTo(_leafletMap).bindPopup(`🟢 ${a.state} — ${a.dist.toFixed(0)} km away, less crowded`);
+    bounds.push(c);
+  });
+  if(APP.touristLoc){
+    const meIcon = L.divIcon({className:'', html:'<div style="width:14px;height:14px;border-radius:50%;background:#E3A32B;border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);"></div>', iconSize:[14,14]});
+    L.marker([APP.touristLoc.lat, APP.touristLoc.lng], {icon:meIcon}).addTo(_leafletMap).bindPopup('📍 You are here');
+    bounds.push([APP.touristLoc.lat, APP.touristLoc.lng]);
+  }
+  try{ _leafletMap.fitBounds(bounds, {padding:[30,30]}); }catch(err){}
+}
+
+function bookExperience(id){
+  const e = EXPERIENCES.find(x=>x.id===id);
+  if(!e) return;
+  if(!APP.authRole){ toast('Please log in first.'); navigate('login'); return; }
+  const dateEl = document.getElementById('bookDate');
+  const date = dateEl ? dateEl.value : '';
+  const time = (document.getElementById('bookTime')||{}).value || '10:00';
+  const people = Number((document.getElementById('bookPeople')||{}).value) || 1;
+  if(!date){ toast('Please choose a date.'); return; }
+  const booking = {
+    id: 'RTI-'+Date.now().toString().slice(-6), expId: e.id, host: e.host, title: e.title,
+    price: e.price, date, time, people, status: 'pending_vendor_confirmation', crowdAvoided: false
+  };
+  APP.bookings.push(booking);
+  persist('bookings', APP.bookings);
+  notifyVendor(booking, e);
+  APP.lastBooking = booking;
+  toast('Booking request sent! The host will confirm shortly. ✅');
+  navigate('touristdashboard');
+}
+
+/* ============================= BOOK A GUIDE ============================= */
+function renderBookGuide(){
+  const tr = TRANSLATIONS[APP.uiLang];
+  const f = APP.guideRequestForm;
+  const guidesHere = Object.values(APP.guides).filter(g=>g.location===f.state);
+  return `
+  ${renderNav('bookguide')}
+  <div class="max-w-xl mx-auto px-5 py-8">
+    <div class="font-display text-xl font-bold text-indigo-deep">${tr.bookGuideTitle}</div>
+    <div class="opacity-70 text-sm mt-2 mb-5">${tr.bookGuideSub}</div>
+    <div class="card p-5 space-y-3">
+      <div>
+        <label class="text-xs font-semibold opacity-70 block mb-1">${tr.selectRegion}</label>
+        <select onchange="APP.guideRequestForm.state=this.value;render();">${Object.keys(REGIONS).map(s=>`<option ${f.state===s?'selected':''}>${s}</option>`).join('')}</select>
+      </div>
+      <div>
+        <label class="text-xs font-semibold opacity-70 block mb-1">${tr.yourRequirements}</label>
+        <textarea rows="3" placeholder="${tr.requirementsPlaceholder}" onchange="APP.guideRequestForm.requirements=this.value">${f.requirements}</textarea>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="text-xs font-semibold opacity-70 block mb-1">${tr.preferredDate}</label><input type="date" value="${f.date}" onchange="APP.guideRequestForm.date=this.value"></div>
+        <div><label class="text-xs font-semibold opacity-70 block mb-1">${tr.preferredTime}</label><input type="text" value="${f.time}" onchange="APP.guideRequestForm.time=this.value"></div>
+      </div>
+      <div><label class="text-xs font-semibold opacity-70 block mb-1">${tr.groupSize}</label><input type="number" min="1" value="${f.people}" onchange="APP.guideRequestForm.people=this.value"></div>
+      <button class="btn-primary w-full" onclick="submitGuideRequest()">${tr.sendGuideRequest}</button>
+    </div>
+    <div class="mt-6">
+      <div class="font-display font-bold text-indigo-deep mb-2">${tr.availableGuidesIn} ${f.state}</div>
+      <div class="space-y-2">
+        ${guidesHere.map(g=>`<div class="card p-3 text-sm flex justify-between items-center"><span>${g.name}</span><button class="chip" onclick="submitGuideRequest()">${tr.requestThisGuide}</button></div>`).join('') || `<div class="opacity-60 text-sm">${tr.noGuidesYet}</div>`}
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ============================= TOURIST DASHBOARD ============================= */
+function bookingCard(b){
+  const statusLabel = {
+    pending_vendor_confirmation: `⏳ ${TRANSLATIONS[APP.uiLang].waitingVendor}`,
+    upcoming: TRANSLATIONS[APP.uiLang].vendorConfirmed,
+    completed: '✔️ Completed',
+    declined: TRANSLATIONS[APP.uiLang].vendorDeclined
+  }[b.status] || b.status;
+  return `<div class="card p-4 flex justify-between items-center flex-wrap gap-2">
+    <div><div class="font-semibold text-indigo-deep">${b.title}</div><div class="text-xs opacity-60">${b.date} · ${b.time} · ${b.people} people</div></div>
+    <div class="text-right"><div class="font-bold text-madder">${fmt(b.price*b.people)}</div><div class="text-xs">${statusLabel}</div></div>
+  </div>`;
+}
+function renderTouristDashboard(){
+  const tr = TRANSLATIONS[APP.uiLang];
+  const upcoming = APP.bookings.filter(b=>b.status!=='completed');
+  const past = APP.bookings.filter(b=>b.status==='completed');
+  const myItineraries = APP.itineraries.filter(it=>it.owner===APP.authUser);
+  return `
+  ${renderNav('touristdashboard')}
+  <div class="max-w-4xl mx-auto px-5 py-8">
+    <div class="font-display text-xl font-bold text-indigo-deep mb-5">${tr.myBookingsTitle}</div>
+    <div class="font-semibold text-sm opacity-70 mb-2">${tr.myUpcoming}</div>
+    <div class="space-y-3 mb-6">${upcoming.map(bookingCard).join('') || `<div class="opacity-60 text-sm">${tr.noneYet}</div>`}</div>
+    <div class="font-semibold text-sm opacity-70 mb-2">${tr.myPast}</div>
+    <div class="space-y-3 mb-8">${past.map(bookingCard).join('') || `<div class="opacity-60 text-sm">${tr.noneYet}</div>`}</div>
+    <div class="font-display font-bold text-indigo-deep mb-2">🗺️ My saved itineraries</div>
+    <div class="space-y-3 mb-8">
+      ${myItineraries.length ? myItineraries.slice().reverse().map(it=>`
+        <div class="card p-4 text-sm">
+          <div class="font-semibold mb-1">Itinerary ${it.id} <span class="opacity-50 font-normal">· saved ${new Date(it.createdAt).toLocaleDateString()}</span></div>
+          ${it.items.map(x=>`<div class="opacity-70">${x.date} · ${x.time} — ${x.title} (${x.city})</div>`).join('')}
+        </div>`).join('') : `<div class="opacity-60 text-sm">${tr.noneYet} <span class="underline cursor-pointer text-indigo-deep" onclick="navigate('itinerary')">Build one now →</span></div>`}
+    </div>
+    <div class="font-display font-bold text-indigo-deep mb-2">${tr.guideRequestsLabel}</div>
+    <div class="space-y-3">
+      ${APP.guideBookings.map(g=>`<div class="card p-3 text-sm">${g.region} · ${g.date} ${g.time} · ${g.people} people <span class="opacity-60">— ${g.status.replace(/_/g,' ')}</span></div>`).join('') || `<div class="opacity-60 text-sm">${tr.noneYet}</div>`}
+    </div>
+  </div>`;
+}
+
+/* ============================= HOST (VENDOR) DASHBOARD ============================= */
+function renderHostDashboard(){
+  const tr = TRANSLATIONS[APP.uiLang];
+  const vendorName = APP.authUser;
+  const vendor = APP.vendors[vendorName] || {};
+  const myNotifs = APP.notifications.filter(n=>n.vendorName===vendorName);
+  const pending = myNotifs.filter(n=>n.status==='pending');
+  const upcoming = myNotifs.filter(n=>n.status==='accepted');
+  return `
+  ${renderNav('hostdashboard')}
+  <div class="max-w-4xl mx-auto px-5 py-8">
+    <div class="flex justify-between items-start flex-wrap gap-3 mb-6">
+      <div>
+        <div class="font-display text-xl font-bold text-indigo-deep">${tr.welcomeBack}, ${vendorName} 👋</div>
+        <div class="text-xs opacity-60 mt-1">${vendor.address||''} ${vendor.lat?' · 📍 exact location saved':' · no exact location saved yet'}</div>
+      </div>
+      <button class="btn-outline text-xs" onclick="shareVendorLocation()">📍 ${tr.shareExactLocation}</button>
+    </div>
+    ${pending.length ? `<div class="card p-4 mb-6 stitch"><span class="font-semibold">${pending.length} new booking request${pending.length>1?'s':''} waiting</span> — <span class="underline cursor-pointer text-indigo-deep" onclick="navigate('hostnotifications')">view notifications</span></div>` : ''}
+    <div class="font-display font-bold text-indigo-deep mb-2">${tr.upcomingAppts||tr.upcomingBookings}</div>
+    <div class="space-y-3">
+      ${upcoming.map(n=>`<div class="card p-3 text-sm">${n.title} · ${n.date} ${n.time} · ${n.people} people</div>`).join('') || `<div class="opacity-60 text-sm">No upcoming bookings yet.</div>`}
+    </div>
+  </div>`;
+}
+function renderHostRevenue(){
+  const tr = TRANSLATIONS[APP.uiLang];
+  const vendorName = APP.authUser;
+  const myNotifs = APP.notifications.filter(n=>n.vendorName===vendorName && n.status==='accepted');
+  const revenue = myNotifs.reduce((s,n)=>s+n.amount,0);
+  return `
+  ${renderNav('hostrevenue')}
+  <div class="max-w-4xl mx-auto px-5 py-8">
+    <div class="font-display text-xl font-bold text-indigo-deep mb-5">${tr.revenueLabel}</div>
+    <div class="card p-6 text-center mb-6"><div class="text-3xl font-bold text-madder">${fmt(revenue)}</div><div class="text-xs opacity-60 mt-1">${tr.totalRevenueMade}</div></div>
+    <div class="font-display font-bold text-indigo-deep mb-2">${tr.earningsBreakdown}</div>
+    <div class="space-y-2">
+      ${myNotifs.map(n=>`<div class="card p-3 flex justify-between items-center text-sm"><span>${n.title} · ${n.date}</span><span class="font-bold text-madder">${fmt(n.amount)}</span></div>`).join('') || `<div class="opacity-60 text-sm">${tr.noConfirmedBookings}</div>`}
+    </div>
+  </div>`;
+}
+function renderHostReviews(){
+  const tr = TRANSLATIONS[APP.uiLang];
+  const vendorName = APP.authUser;
+  const myExps = EXPERIENCES.filter(e=>e.host===vendorName);
+  const allReviews = myExps.flatMap(e=>e.reviews.map(r=>Object.assign({expTitle:e.title}, r)));
+  return `
+  ${renderNav('hostreviews')}
+  <div class="max-w-3xl mx-auto px-5 py-8">
+    <div class="font-display text-xl font-bold text-indigo-deep mb-5">${tr.myReviewsFeedback}</div>
+    <div class="space-y-3">
+      ${allReviews.map(r=>`<div class="card p-3 text-sm"><b>${r.user}</b> · ⭐${r.rating} <span class="opacity-50">on ${r.expTitle}</span><div class="opacity-70 mt-1">${r.text}</div></div>`).join('') || `<div class="opacity-60 text-sm">${tr.noReviewsYet}</div>`}
+    </div>
+  </div>`;
+}
+function renderHostUpcoming(){
+  const tr = TRANSLATIONS[APP.uiLang];
+  const vendorName = APP.authUser;
+  const upcoming = APP.notifications.filter(n=>n.vendorName===vendorName && n.status==='accepted');
+  return `
+  ${renderNav('hostupcoming')}
+  <div class="max-w-4xl mx-auto px-5 py-8">
+    <div class="font-display text-xl font-bold text-indigo-deep mb-5">${tr.upcomingBookings}</div>
+    <div class="space-y-3">
+      ${upcoming.map(n=>`<div class="card p-4 text-sm"><div class="font-semibold">${n.title}</div><div class="opacity-70 mt-1">${n.people} people · ${n.date} at ${n.time} · ${fmt(n.amount)}</div></div>`).join('') || `<div class="opacity-60 text-sm">${tr.noUpcomingAppts||tr.noUpcomingBookingsYet}</div>`}
+    </div>
+  </div>`;
+}
+function renderHostNotifications(){
+  const tr = TRANSLATIONS[APP.uiLang];
+  const vendorName = APP.authUser;
+  const pending = APP.notifications.filter(n=>n.vendorName===vendorName && n.status==='pending');
+  return `
+  ${renderNav('hostnotifications')}
+  <div class="max-w-4xl mx-auto px-5 py-8">
+    <div class="font-display text-xl font-bold text-indigo-deep mb-5">${tr.appointmentNotifications}</div>
+    <div class="space-y-3">
+      ${pending.map(n=>`
+      <div class="card p-4">
+        <div class="font-semibold">${tr.newApptFrom}: ${n.title}</div>
+        <div class="text-sm opacity-70 mt-1">${n.people} ${tr.bookingReqBody} · ${n.date} ${tr.apptAt} ${n.time} · ${tr.bookingReqAmount}: ${fmt(n.amount)}</div>
+        <div class="flex gap-2 mt-3">
+          <button class="btn-primary !py-1.5 !px-3 text-sm" onclick="vendorRespond('${n.id}',true)">${tr.yesConfirm}</button>
+          <button class="btn-outline !py-1.5 !px-3 text-sm" onclick="vendorRespond('${n.id}',false)">${tr.noDecline}</button>
+        </div>
+      </div>`).join('') || `<div class="opacity-60 text-sm">${tr.noAppointments}</div>`}
+    </div>
+  </div>`;
+}
+
+/* ============================= GUIDE DASHBOARD ============================= */
+const GUIDE_FEE_PER_PERSON = 500;
+function renderGuideDashboard(){ return renderGuideUpcoming(); }
+function renderGuideRevenue(){
+  const tr = TRANSLATIONS[APP.uiLang];
+  const guideName = APP.authUser;
+  const myBookings = APP.guideBookings.filter(b=>b.guideName===guideName && (b.status==='upcoming'||b.status==='completed'));
+  const revenue = myBookings.reduce((s,b)=>s+b.people*GUIDE_FEE_PER_PERSON,0);
+  return `
+  ${renderNav('guiderevenue')}
+  <div class="max-w-4xl mx-auto px-5 py-8">
+    <div class="font-display text-xl font-bold text-indigo-deep mb-5">${tr.revenueLabel}</div>
+    <div class="card p-6 text-center mb-6"><div class="text-3xl font-bold text-madder">${fmt(revenue)}</div><div class="text-xs opacity-60 mt-1">${tr.totalRevenueMade}</div></div>
+    <div class="space-y-2">
+      ${myBookings.map(b=>`<div class="card p-3 flex justify-between items-center text-sm"><span>${b.touristName} · ${b.date}</span><span class="font-bold text-madder">${fmt(b.people*GUIDE_FEE_PER_PERSON)}</span></div>`).join('') || `<div class="opacity-60 text-sm">${tr.noConfirmedBookings}</div>`}
+    </div>
+  </div>`;
+}
+function renderGuideReviews(){
+  const tr = TRANSLATIONS[APP.uiLang];
+  const feedback = APP.confessions.filter(c=>c.role==='Traveler Guide');
+  return `
+  ${renderNav('guidereviews')}
+  <div class="max-w-3xl mx-auto px-5 py-8">
+    <div class="font-display text-xl font-bold text-indigo-deep mb-5">${tr.myReviewsFeedback}</div>
+    <div class="space-y-3">
+      ${feedback.map(c=>`<div class="card p-3 text-sm"><b>${c.anon?'Anonymous':c.name}</b><div class="opacity-70 mt-1">${c.text}</div></div>`).join('') || `<div class="opacity-60 text-sm">${tr.noReviewsYet}</div>`}
+    </div>
+  </div>`;
+}
+function renderGuideUpcoming(){
+  const tr = TRANSLATIONS[APP.uiLang];
+  const guideName = APP.authUser;
+  const guideProfile = APP.guides[guideName];
+  const myNotifs = APP.guideNotifications.filter(n=>n.guideName===guideName);
+  const pending = myNotifs.filter(n=>n.status==='pending');
+  const upcoming = APP.guideBookings.filter(b=>b.guideName===guideName && b.status==='upcoming');
+  return `
+  ${renderNav('guideupcoming')}
+  <div class="max-w-4xl mx-auto px-5 py-8">
+    <div class="font-display text-xl font-bold text-indigo-deep mb-1">${tr.upcomingBookings}</div>
+    <div class="opacity-60 text-sm mb-6">${tr.yourProfile}: ${guideName}</div>
+    ${guideProfile && !guideProfile.profileComplete ? `<div class="card p-4 mb-6 stitch"><span class="font-semibold">🔔 Set up your profile</span> — add your details and guiding experience so tourists know who you are. <span class="underline cursor-pointer text-indigo-deep" onclick="navigate('profile')">Go to profile</span></div>` : ''}
+    <div class="font-display font-bold text-indigo-deep mb-2">${tr.appointmentNotifications}</div>
+    <div class="space-y-3 mb-6">
+      ${pending.map(n=>`
+      <div class="card p-4">
+        <div class="font-semibold">${tr.newApptFrom} ${n.touristName}</div>
+        <div class="text-sm opacity-70 mt-1">${tr.apptRegion}: ${n.region} · ${tr.apptOn} ${n.date} ${tr.apptAt} ${n.time} · ${tr.apptPeople}: ${n.people}</div>
+        <div class="text-sm opacity-70">${tr.apptRequirements}: ${n.requirements||'—'}</div>
+        <div class="flex gap-2 mt-3">
+          <button class="btn-primary !py-1.5 !px-3 text-sm" onclick="guideRespond('${n.id}',true)">${tr.yesConfirm}</button>
+          <button class="btn-outline !py-1.5 !px-3 text-sm" onclick="guideRespond('${n.id}',false)">${tr.noDecline}</button>
+        </div>
+      </div>`).join('') || `<div class="opacity-60 text-sm">${tr.noAppointments}</div>`}
+    </div>
+    <div class="font-display font-bold text-indigo-deep mb-2">${tr.upcomingAppts}</div>
+    <div class="space-y-3">${upcoming.map(b=>`<div class="card p-3 text-sm">${b.touristName} · ${b.date} ${b.time} · ${b.people} people</div>`).join('') || `<div class="opacity-60 text-sm">${tr.noUpcomingAppts}</div>`}</div>
+  </div>`;
+}
+
+/* ============================= PROFILE ============================= */
+function getMyProfile(){
+  if(!APP.authUser) return {};
+  if(APP.authRole==='host'){ if(!APP.vendors[APP.authUser]) APP.vendors[APP.authUser]={name:APP.authUser}; return APP.vendors[APP.authUser]; }
+  if(APP.authRole==='guide'){ if(!APP.guides[APP.authUser]) APP.guides[APP.authUser]={name:APP.authUser}; return APP.guides[APP.authUser]; }
+  if(APP.authRole==='tourist'){ if(!APP.touristProfiles[APP.authUser]) APP.touristProfiles[APP.authUser]={name:APP.authUser}; return APP.touristProfiles[APP.authUser]; }
+  return {};
+}
+function saveProfileField(field, value){
+  const p = getMyProfile();
+  p[field] = value;
+  if(APP.authRole==='host') persist('vendors', APP.vendors);
+  else if(APP.authRole==='guide') persist('guides', APP.guides);
+  else if(APP.authRole==='tourist') persist('touristProfiles', APP.touristProfiles);
+}
+function saveProfile(){
+  const p = getMyProfile();
+  p.profileComplete = true;
+  saveProfileField('profileComplete', true);
+  toast('Profile saved ✅');
+  render();
+}
+function renderProfileView(){
+  const tr = TRANSLATIONS[APP.uiLang];
+  const p = getMyProfile();
+  const role = APP.authRole;
+  return `
+  ${renderNav('profile')}
+  <div class="max-w-xl mx-auto px-5 py-8">
+    <div class="font-display text-xl font-bold text-indigo-deep mb-5">👤 ${tr.myProfile}</div>
+    <div class="card p-5 space-y-3">
+      <div><label class="text-xs font-semibold opacity-70 block mb-1">${tr.name} *</label><input type="text" value="${p.name||''}" onchange="saveProfileField('name', this.value)"></div>
+      <div><label class="text-xs font-semibold opacity-70 block mb-1">${tr.phone} *</label><input type="text" value="${p.phone||''}" onchange="saveProfileField('phone', this.value)"></div>
+      ${role==='tourist' ? `<div><label class="text-xs font-semibold opacity-70 block mb-1">${tr.email} *</label><input type="text" value="${p.email||''}" onchange="saveProfileField('email', this.value)"></div>` : ''}
+      ${role==='host' ? `
+      <div><label class="text-xs font-semibold opacity-70 block mb-1">${tr.address} *</label><input type="text" value="${p.address||''}" onchange="saveProfileField('address', this.value)"></div>
+      <div class="text-xs opacity-60 flex items-center justify-between bg-sandstone rounded-lg p-2">
+        <span>${p.lat ? '📍 Exact location saved' : 'No exact location shared yet'}</span>
+        <button class="btn-outline !py-1 !px-2 text-xs" onclick="shareVendorLocation()">${tr.shareExactLocation}</button>
+      </div>` : ''}
+      ${role==='guide' ? `
+      <div><label class="text-xs font-semibold opacity-70 block mb-1">${tr.location} *</label><select onchange="saveProfileField('location', this.value)">${Object.keys(REGIONS).map(s=>`<option ${p.location===s?'selected':''}>${s}</option>`).join('')}</select></div>
+      <div><label class="text-xs font-semibold opacity-70 block mb-1">${tr.fillExperience} *</label><textarea rows="4" placeholder="${tr.experiencePlaceholder}" onchange="saveProfileField('experience', this.value)">${p.experience||''}</textarea></div>` : ''}
+      <button class="btn-primary w-full" onclick="saveProfile()">${tr.saveProfile}</button>
+    </div>
+  </div>`;
+}
+
+/* ============================= BUILD YOUR OWN ITINERARY ============================= */
+function addItineraryItem(){
+  const f = APP.itineraryForm;
+  const exp = EXPERIENCES.find(e=>e.id===f.expId);
+  if(!exp){ toast('Please choose an experience.'); return; }
+  if(!f.date){ toast('Please choose a date.'); return; }
+  APP.itineraryBuilder.push({expId:exp.id, title:exp.title, cat:exp.cat, state:exp.state, city:exp.city, price:exp.price, date:f.date, time:f.time});
+  toast('Added to your itinerary.');
+  render();
+}
+function removeItineraryItem(idx){
+  APP.itineraryBuilder.splice(idx,1);
+  render();
+}
+function saveItinerary(){
+  if(!APP.itineraryBuilder.length){ toast('Add at least one activity first.'); return; }
+  if(!APP.authUser){ toast('Please log in to save your itinerary.'); navigate('login'); return; }
+  const it = {
+    id:'IT-'+Date.now().toString().slice(-6), owner: APP.authUser,
+    items: APP.itineraryBuilder.slice().sort((a,b)=> (a.date+a.time).localeCompare(b.date+b.time)),
+    createdAt: new Date().toISOString()
+  };
+  APP.itineraries.push(it);
+  persist('itineraries', APP.itineraries);
+  APP.itineraryBuilder = [];
+  toast('Itinerary saved! 🗺️ You can find it under My Bookings.');
+  if(APP.authRole==='tourist'){ navigate('touristdashboard'); } else { render(); }
+}
+function renderItinerary(){
+  const f = APP.itineraryForm;
+  const catsForState = (REGIONS[f.state] && REGIONS[f.state].cats) || Object.keys(CAT);
+  if(!catsForState.includes(f.cat)) f.cat = catsForState[0];
+  const options = EXPERIENCES.filter(e=>e.state===f.state && e.cat===f.cat);
+  if(!options.some(e=>e.id===f.expId)) f.expId = options[0] ? options[0].id : '';
+  const myItineraries = APP.itineraries.filter(it=>it.owner===APP.authUser);
+  return `
+  ${renderNav('itinerary')}
+  <div class="max-w-3xl mx-auto px-5 py-8">
+    <div class="font-display text-xl font-bold text-indigo-deep mb-1">Build Your Own Itinerary</div>
+    <div class="opacity-70 text-sm mb-5">Pick the activities you want, choose the time that works for you, and put together your own custom plan.</div>
+    <div class="card p-5 space-y-3">
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="text-xs font-semibold opacity-70 block mb-1">State</label><select onchange="APP.itineraryForm.state=this.value;APP.itineraryForm.expId='';render();">${Object.keys(REGIONS).map(s=>`<option ${f.state===s?'selected':''}>${s}</option>`).join('')}</select></div>
+        <div><label class="text-xs font-semibold opacity-70 block mb-1">Activity type</label><select onchange="APP.itineraryForm.cat=this.value;APP.itineraryForm.expId='';render();">${catsForState.map(c=>`<option value="${c}" ${f.cat===c?'selected':''}>${CAT[c].icon} ${CAT[c].label}</option>`).join('')}</select></div>
+      </div>
+      <div><label class="text-xs font-semibold opacity-70 block mb-1">Experience</label><select onchange="APP.itineraryForm.expId=this.value">${options.map(e=>`<option value="${e.id}" ${f.expId===e.id?'selected':''}>${e.title} — ${e.city}</option>`).join('') || '<option>No experiences yet in this category</option>'}</select></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="text-xs font-semibold opacity-70 block mb-1">Date</label><input type="date" value="${f.date}" onchange="APP.itineraryForm.date=this.value"></div>
+        <div><label class="text-xs font-semibold opacity-70 block mb-1">Time</label><input type="text" value="${f.time}" onchange="APP.itineraryForm.time=this.value"></div>
+      </div>
+      <button class="btn-outline w-full" onclick="addItineraryItem()">+ Add to itinerary</button>
+    </div>
+    <div class="mt-6">
+      <div class="font-display font-bold text-indigo-deep mb-2">Your plan so far</div>
+      <div class="space-y-2">
+        ${APP.itineraryBuilder.map((it,i)=>`<div class="card p-3 flex justify-between items-center text-sm"><span>${it.date} · ${it.time} — ${it.title} (${it.city})</span><span class="cursor-pointer text-madder" onclick="removeItineraryItem(${i})">✕</span></div>`).join('') || '<div class="opacity-60 text-sm">No activities added yet.</div>'}
+      </div>
+      ${APP.itineraryBuilder.length ? `<button class="btn-primary w-full mt-3" onclick="saveItinerary()">Save Itinerary</button>` : ''}
+    </div>
+    ${myItineraries.length ? `
+    <div class="mt-8">
+      <div class="font-display font-bold text-indigo-deep mb-2">Your saved itineraries</div>
+      <div class="space-y-3">
+        ${myItineraries.map(it=>`<div class="card p-4 text-sm"><div class="font-semibold mb-1">Itinerary ${it.id}</div>${it.items.map(x=>`<div class="opacity-70">${x.date} · ${x.time} — ${x.title}</div>`).join('')}</div>`).join('')}
+      </div>
+    </div>` : ''}
+  </div>`;
+}
+
+/* ============================= ADMIN ============================= */
+function renderAdmin(){
+  const totalBookings = APP.bookings.length;
+  const totalVendors = Object.keys(APP.vendors).length;
+  const totalGuides = Object.keys(APP.guides).length;
+  const revenue = APP.bookings.filter(b=>b.status==='completed'||b.status==='upcoming').reduce((s,b)=>s+b.price*b.people,0);
+  return `
+  ${renderNav('admin')}
+  <div class="max-w-5xl mx-auto px-5 py-8">
+    <div class="font-display text-xl font-bold text-indigo-deep mb-6">Admin Overview</div>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+      <div class="card p-4 text-center"><div class="text-2xl font-bold text-madder">${fmt(revenue)}</div><div class="text-xs opacity-60">Total booking value</div></div>
+      <div class="card p-4 text-center"><div class="text-2xl font-bold text-indigo-deep">${totalBookings}</div><div class="text-xs opacity-60">Bookings</div></div>
+      <div class="card p-4 text-center"><div class="text-2xl font-bold text-palm">${totalVendors}</div><div class="text-xs opacity-60">Registered community hosts</div></div>
+      <div class="card p-4 text-center"><div class="text-2xl font-bold text-turmeric">${totalGuides}</div><div class="text-xs opacity-60">Registered guides</div></div>
+    </div>
+    <div class="font-display font-bold text-indigo-deep mb-2">Community host locations</div>
+    <div class="space-y-2 mb-8 text-sm">
+      ${Object.values(APP.vendors).map(v=>`<div class="card p-3 flex justify-between items-center"><span>${v.name} — ${v.address||v.location||'—'}</span>${v.lat?`<a class="text-indigo-deep underline text-xs" target="_blank" rel="noopener" href="https://www.google.com/maps?q=${v.lat},${v.lng}">View real location on map ↗</a>`:'<span class="opacity-50 text-xs">No exact location shared</span>'}</div>`).join('') || '<div class="opacity-60">No vendors registered yet.</div>'}
+    </div>
+    <div class="font-display font-bold text-indigo-deep mb-2">Reports</div>
+    <div class="space-y-2">
+      ${APP.reports.map(r=>`<div class="card p-3 text-sm flex justify-between items-center"><span>${r.text}</span><span class="chip ${r.status==='open'?'active':''}" onclick="toggleReport('${r.id}')">${r.status}</span></div>`).join('')}
+    </div>
+  </div>`;
+}
+function toggleReport(id){
+  const r = APP.reports.find(x=>x.id===id);
+  if(!r) return;
+  r.status = r.status==='open' ? 'resolved' : 'open';
+  render();
+}
+
+/* ============================= FEEDBACK / CONFESSION WALL ============================= */
+function renderFeedback(){
+  const tr = TRANSLATIONS[APP.uiLang];
+  const f = APP.confessionForm;
+  return `
+  ${renderNav('feedback')}
+  <div class="max-w-2xl mx-auto px-5 py-8">
+    <div class="font-display text-xl font-bold text-indigo-deep">${tr.confessionWall}</div>
+    <div class="opacity-70 text-sm mt-2 mb-5">${tr.confessionSubtitle}</div>
+    <div class="card p-4 space-y-3 mb-8">
+      <input type="text" placeholder="${tr.yourName}" value="${f.name}" onchange="APP.confessionForm.name=this.value">
+      <select onchange="APP.confessionForm.role=this.value">
+        ${['Tourist','Local Host','Traveler Guide'].map(r=>`<option ${f.role===r?'selected':''}>${r}</option>`).join('')}
+      </select>
+      <textarea rows="3" placeholder="${tr.shareThought}" onchange="APP.confessionForm.text=this.value">${f.text}</textarea>
+      <label class="text-xs flex items-center gap-2"><input type="checkbox" ${f.anon?'checked':''} onchange="APP.confessionForm.anon=this.checked" style="width:auto;"> ${tr.postAnon}</label>
+      <button class="btn-primary w-full" onclick="submitConfession()">${tr.submit}</button>
+    </div>
+    <div class="font-semibold text-sm opacity-70 mb-2">${tr.recentPosts}</div>
+    <div class="space-y-3">
+      ${APP.confessions.map(c=>`<div class="card p-3 text-sm"><b>${c.anon?'Anonymous':c.name}</b> · <span class="opacity-60">${c.role}</span><div class="mt-1 opacity-80">${c.text}</div></div>`).join('')}
+    </div>
+  </div>`;
+}
+function submitConfession(){
+  const f = APP.confessionForm;
+  if(!f.text.trim()){ toast('Please write something first.'); return; }
+  APP.confessions.unshift({name: f.anon?'':(f.name.trim()||'Anonymous'), role: f.role, anon: f.anon, text: f.text.trim(), date: new Date().toISOString().slice(0,10)});
+  persist('confessions', APP.confessions);
+  APP.confessionForm = {name:'', role:'Tourist', text:'', anon:false};
+  toast('Thank you for sharing! 🙏');
+  render();
+}
+
+/* ============================= MAIN RENDER DISPATCHER ============================= */
+function render(){
+  const root = document.getElementById('app');
+  if(!root) return;
+  if(!APP.langChosen){ root.innerHTML = renderLangGate(); return; }
+  const protectedViews = ['touristdashboard','hostdashboard','hostrevenue','hostreviews','hostupcoming','hostnotifications','guidedashboard','guiderevenue','guidereviews','guideupcoming','admin','profile'];
+  if(!APP.authRole && (APP.view==='login' || protectedViews.includes(APP.view))){
+    root.innerHTML = renderLogin();
+    return;
+  }
+  let html;
+  switch(APP.view){
+    case 'home': html = renderHome(); break;
+    case 'explore': html = renderExplore(); break;
+    case 'experience': html = renderExperienceView(); break;
+    case 'bookguide': html = renderBookGuide(); break;
+    case 'itinerary': html = renderItinerary(); break;
+    case 'profile': html = renderProfileView(); break;
+    case 'touristdashboard': html = renderTouristDashboard(); break;
+    case 'hostdashboard': html = renderHostDashboard(); break;
+    case 'hostrevenue': html = renderHostRevenue(); break;
+    case 'hostreviews': html = renderHostReviews(); break;
+    case 'hostupcoming': html = renderHostUpcoming(); break;
+    case 'hostnotifications': html = renderHostNotifications(); break;
+    case 'guidedashboard': html = renderGuideDashboard(); break;
+    case 'guiderevenue': html = renderGuideRevenue(); break;
+    case 'guidereviews': html = renderGuideReviews(); break;
+    case 'guideupcoming': html = renderGuideUpcoming(); break;
+    case 'admin': html = renderAdmin(); break;
+    case 'feedback': html = renderFeedback(); break;
+    case 'login': html = renderLogin(); break;
+    default: html = renderHome();
+  }
+  root.innerHTML = html;
+  if(APP.view==='experience'){ setTimeout(initCrowdMap, 0); }
+  if(APP.drawerOpen){ /* drawer markup is injected separately, see toggleDrawer() */ }
+}
+
+/* ============================= BOOKING REMINDERS (30 min before) ============================= */
+function checkBookingReminders(){
+  if(!APP.authUser) return;
+  const now = Date.now();
+  const all = [
+    ...APP.bookings.filter(b=>b.status==='upcoming').map(b=>({id:'B-'+b.id, date:b.date, time:b.time, label:b.title})),
+    ...APP.guideBookings.filter(b=>b.status==='upcoming' && b.touristName===APP.authUser).map(b=>({id:'G-'+b.id, date:b.date, time:b.time, label:'Guide appointment in '+b.region}))
+  ];
+  all.forEach(item=>{
+    if(!item.date || !item.time) return;
+    if(APP.remindedBookingIds.includes(item.id)) return;
+    const when = new Date(`${item.date}T${(item.time.match(/^\d{1,2}:\d{2}$/)?item.time:'10:00')}:00`);
+    if(isNaN(when.getTime())) return;
+    const minsUntil = (when.getTime() - now) / 60000;
+    if(minsUntil > 0 && minsUntil <= 30){
+      APP.remindedBookingIds.push(item.id);
+      const msg = `⏰ Reminder: "${item.label}" starts in about ${Math.round(minsUntil)} min (${item.time}).`;
+      toast(msg);
+      if(typeof Notification !== 'undefined' && Notification.permission === 'granted'){
+        try{ new Notification('Anubhav', {body: msg}); }catch(err){}
+      }
+    }
+  });
+}
+if(typeof Notification !== 'undefined' && Notification.permission === 'default'){
+  try{ Notification.requestPermission(); }catch(err){}
+}
+setInterval(checkBookingReminders, 30000);
+
+/* ============================= SPLASH SCREEN ============================= */
+function dismissSplash(){
+  APP.splashDone = true;
+  const el = document.getElementById('splash');
+  if(el){ el.classList.add('hide'); setTimeout(()=>el.remove(), 550); }
+}
+
+/* ============================= APP INIT ============================= */
+handleRoute();   // paint immediately using whatever's already in memory / seed data
+loadBackend();   // then load real data from Firestore (if configured) and re-render
+setTimeout(dismissSplash, 2200);   // splash screen: "Anubhav" — auto-hides, or tap to skip
+</script>
+</body>
+</html>
