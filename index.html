@@ -695,6 +695,43 @@ function toast(msg){
   document.getElementById('toasts').appendChild(el);
   setTimeout(()=>{ el.style.opacity='0'; el.style.transition='opacity .4s'; setTimeout(()=>el.remove(),400); }, 3200);
 }
+/* ============================= REMEMBERED LOGIN SESSION ============================= */
+/* Keeps a person logged in (and their login-form details filled in) across page
+   reloads/visits, using this browser's localStorage — the same mechanism any
+   real site uses for "stay logged in". Nothing sensitive like the raw Aadhaar
+   number or password is stored, only what's needed to skip re-typing the form:
+   name, role, phone, address/location. If this file is opened as a local
+   file:// page some browsers restrict localStorage per-file, in which case
+   this quietly falls back to asking to log in again — it never breaks the app. */
+const SESSION_KEY = 'anubhav_session_v1';
+function saveSession(){
+  try{
+    localStorage.setItem(SESSION_KEY, JSON.stringify({
+      authUser: APP.authUser,
+      authRole: APP.authRole,
+      loginForm: {
+        name: APP.loginForm.name, contact: APP.loginForm.contact, phone: APP.loginForm.phone,
+        address: APP.loginForm.address, location: APP.loginForm.location,
+        aadhaar: APP.loginForm.aadhaar, phoneVerified: APP.loginForm.phoneVerified
+      }
+    }));
+  }catch(err){ console.warn('Could not save session locally (localStorage unavailable).', err); }
+}
+function restoreSession(){
+  try{
+    const raw = localStorage.getItem(SESSION_KEY);
+    if(!raw) return;
+    const s = JSON.parse(raw);
+    if(s && s.authUser && s.authRole){
+      APP.authUser = s.authUser;
+      APP.authRole = s.authRole;
+      APP.loginForm = Object.assign({}, APP.loginForm, s.loginForm||{});
+    }
+  }catch(err){ console.warn('Could not restore saved session.', err); }
+}
+function clearSession(){
+  try{ localStorage.removeItem(SESSION_KEY); }catch(err){}
+}
 function navigate(view, query){
   let h = '#'+view;
   if(query && Object.keys(query).length){ h += '?' + new URLSearchParams(query).toString(); }
@@ -837,6 +874,7 @@ function doLogin(role){
     registerGuide({name:APP.authUser, phone:lf.phone.trim(), location:lf.location.trim(), lang:APP.uiLang, phoneVerified:true, aadhaarMasked:maskAadhaar(lf.aadhaar)});
   }
   toast(`Welcome, ${APP.authUser}! 🎉`);
+  saveSession(); // remember this login so a reload doesn't force them to log in / refill the form again
   if(role==='host' && hostIsFirstTime){
     APP.hostBusinessForm = {expId:'', title:'', cat:'food', state:lf.location||'Maharashtra', city:'', price:600, duration:2, maxGroup:4, story:'', learn1:'', learn2:'', learn3:'', tags:[], languages:[APP.uiLang], photos:[]};
     navigate('hostbusiness');
@@ -855,6 +893,7 @@ function logout(){
   APP.authUser = null;
   APP.loginForm = {name:'', contact:'', password:'', address:'', location:'Maharashtra', phone:'', aadhaar:'', otp:'', otpSent:false, phoneVerified:false, otpBusy:false};
   confirmationResult = null;
+  clearSession();
   APP.view = 'login';
   navigate('login');
   render();
@@ -978,7 +1017,7 @@ try{
   }
 }catch(err){ console.error('Firebase init failed', err); }
 
-const PERSIST_KEYS = ['vendors','guides','notifications','bookings','guideNotifications','guideBookings','confessions','itineraries','touristProfiles'];
+const PERSIST_KEYS = ['vendors','guides','notifications','bookings','guideNotifications','guideBookings','confessions','itineraries','touristProfiles','experiences'];
 
 async function persist(key, value){
   if(!db) return; // local-only mode: state just lives in memory for this session
@@ -1007,6 +1046,11 @@ async function loadBackend(){
         else if(doc.id==='confessions' && val && val.length) APP.confessions = val;
         else if(doc.id==='itineraries' && val && val.length) APP.itineraries = val;
         else if(doc.id==='touristProfiles') APP.touristProfiles = val;
+        else if(doc.id==='experiences' && val && val.length){
+          // Replaces the in-memory seed/demo list with the last-saved full list
+          // (seed listings + every host's real saved business listing).
+          EXPERIENCES = val;
+        }
       });
     }catch(err){
       console.error('Firestore load failed, using local demo data instead.', err);
@@ -1799,6 +1843,7 @@ function saveHostBusiness(){
   }
   const vendor = APP.vendors[vendorName] || {};
   registerVendor(Object.assign({}, vendor, {name:vendorName, businessComplete:true}));
+  persist('experiences', EXPERIENCES); // save the listing itself so it survives a page reload, not just in memory
   toast('✅ Your business details and photos are saved — tourists can now see your real listing.');
   navigate('hostdashboard');
 }
@@ -2188,6 +2233,7 @@ function dismissSplash(){
 }
 
 /* ============================= APP INIT ============================= */
+restoreSession(); // log the person back in automatically if they were logged in before (see SESSION_KEY above)
 handleRoute();   // paint immediately using whatever's already in memory / seed data
 loadBackend();   // then load real data from Firestore (if configured) and re-render
 setTimeout(dismissSplash, 2200);   // splash screen: "Anubhav" — auto-hides, or tap to skip
