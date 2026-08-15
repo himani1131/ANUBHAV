@@ -19,6 +19,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="preconnect" href="https://images.unsplash.com">
+<link rel="dns-prefetch" href="https://images.unsplash.com">
 <style>
   /* colour palette - tried to keep it India/earthy themed */
   :root{
@@ -101,6 +103,7 @@
 
   /* ---- crowd map ---- */
   #crowdMap{height:260px;width:100%;border-radius:12px;z-index:0;}
+  #vendorLocMap{height:200px;width:100%;border-radius:10px;z-index:0;margin-top:.7rem;}
   .crowd-alt-row{display:flex;justify-content:space-between;align-items:center;padding:.55rem .2rem;border-bottom:1px dashed rgba(27,42,74,.15);font-size:.85rem;}
   .dot-red{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--madder);margin-right:6px;}
   .dot-green{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--palm);margin-right:6px;}
@@ -142,16 +145,16 @@ const CAT = {
    community host registers (see "My Business & Photos"), their own uploaded
    photos (e.photos) always take priority over these — see expPhoto(). */
 const CAT_IMG = {
-  fishing:['https://images.unsplash.com/photo-1445264718234-016ce8c9d10b?w=600&h=450&fit=crop&q=70'],
-  food:['https://images.unsplash.com/photo-1512058564366-18510be2db19?w=600&h=450&fit=crop&q=70'],
-  art:['https://images.unsplash.com/photo-1582561833308-51c65f5a6b5f?w=600&h=450&fit=crop&q=70'],
+  fishing:['https://images.unsplash.com/photo-1660994112482-8b4f07455dec?w=600&h=450&fit=crop&q=70','https://images.unsplash.com/photo-1445264718234-016ce8c9d10b?w=600&h=450&fit=crop&q=70'],
+  food:['https://images.unsplash.com/photo-1512058564366-18510be2db19?w=600&h=450&fit=crop&q=70','https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=600&h=450&fit=crop&q=70'],
+  art:['https://images.unsplash.com/photo-1582561833308-51c65f5a6b5f?w=600&h=450&fit=crop&q=70','https://images.unsplash.com/photo-1590845947676-fa2022e78aa5?w=600&h=450&fit=crop&q=70'],
   pottery:['https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&h=450&fit=crop&q=70','https://images.unsplash.com/photo-1744893611113-115452349aed?w=600&h=450&fit=crop&q=70'],
-  farming:['https://images.unsplash.com/photo-1500651230702-0e2d8a49d4ad?w=600&h=450&fit=crop&q=70'],
-  handicrafts:['https://images.unsplash.com/photo-1528459801416-a9e53bbf4e17?w=600&h=450&fit=crop&q=70'],
-  music:['https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=600&h=450&fit=crop&q=70'],
-  dance:['https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=600&h=450&fit=crop&q=70'],
-  village:['https://images.unsplash.com/photo-1524492412937-b28074a5d7da?w=600&h=450&fit=crop&q=70'],
-  teacoffee:['https://images.unsplash.com/photo-1560493676-04071c5f467b?w=600&h=450&fit=crop&q=70']
+  farming:['https://images.unsplash.com/photo-1500651230702-0e2d8a49d4ad?w=600&h=450&fit=crop&q=70','https://images.unsplash.com/photo-1592982537447-7440770cbfc9?w=600&h=450&fit=crop&q=70'],
+  handicrafts:['https://images.unsplash.com/photo-1528459801416-a9e53bbf4e17?w=600&h=450&fit=crop&q=70','https://images.unsplash.com/photo-1610030181087-540f829eb99c?w=600&h=450&fit=crop&q=70'],
+  music:['https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=600&h=450&fit=crop&q=70','https://images.unsplash.com/photo-1618609377964-f7d3c5d9a3e1?w=600&h=450&fit=crop&q=70'],
+  dance:['https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=600&h=450&fit=crop&q=70','https://images.unsplash.com/photo-1547153760-18fc86324498?w=600&h=450&fit=crop&q=70'],
+  village:['https://images.unsplash.com/photo-1524492412937-b28074a5d7da?w=600&h=450&fit=crop&q=70','https://images.unsplash.com/photo-1591017683318-9a3e30f34e2a?w=600&h=450&fit=crop&q=70'],
+  teacoffee:['https://images.unsplash.com/photo-1560493676-04071c5f467b?w=600&h=450&fit=crop&q=70','https://images.unsplash.com/photo-1445116572660-236099ec97a0?w=600&h=450&fit=crop&q=70']
 };
 /* Themed inline-SVG placeholder used ONLY if a real photo URL ever fails to
    load (offline, blocked network, etc) — so a listing never shows a broken
@@ -1325,7 +1328,7 @@ function expCard(e, distKm){
   return `
   <div class="card overflow-hidden cursor-pointer" onclick="navigate('experience',{id:'${e.id}'})">
     <div class="photo-tile-wrap">
-      <img class="photo-tile" loading="lazy" src="${expPhoto(e)}" alt="${e.title}" onerror="${expPhotoOnError(e.cat)}">
+      <img class="photo-tile" loading="lazy" referrerpolicy="no-referrer" src="${expPhoto(e)}" alt="${e.title}" onerror="${expPhotoOnError(e.cat)}">
       <div class="photo-emoji-badge">${e.icon}</div>
     </div>
     <div class="p-4">
@@ -1393,7 +1396,7 @@ function renderExperienceView(){
   ${renderNav('explore')}
   <div class="max-w-3xl mx-auto px-5 py-8 fade-in">
     <div class="photo-tile-wrap">
-      <img class="photo-tile-lg" src="${expPhoto(e)}" alt="${e.title}" onerror="${expPhotoOnError(e.cat)}">
+      <img class="photo-tile-lg" loading="lazy" referrerpolicy="no-referrer" src="${expPhoto(e)}" alt="${e.title}" onerror="${expPhotoOnError(e.cat)}">
       <div class="photo-emoji-badge" style="font-size:1.6rem;width:44px;height:44px;">${e.icon}</div>
     </div>
     ${(e.photos && e.photos.length>1) ? `<div class="flex gap-2 mt-2 overflow-x-auto">${e.photos.map(p=>`<img src="${p}" class="rounded-lg object-cover" style="width:84px;height:64px;flex:none;">`).join('')}</div>` : ''}
@@ -1408,9 +1411,12 @@ function renderExperienceView(){
         <div class="text-xs opacity-60">${tr.perPerson} · ${e.duration}h · ${tr.maxGroupLabel} ${e.maxGroup}</div>
       </div>
     </div>
-    <div class="card p-3 mt-4 flex justify-between items-center flex-wrap gap-2 text-sm">
-      <span>📍 ${hasGeo ? `${tr.exactLocationShared}${dist!=null?` · ${dist.toFixed(1)} ${tr.kmFromYou}`:''}` : tr.noExactLocation + ' ' + e.city + ', ' + e.state}</span>
-      ${hasGeo ? `<a class="btn-outline !py-1.5 !px-3 text-xs" target="_blank" rel="noopener" href="https://www.google.com/maps?q=${vendor.lat},${vendor.lng}">${tr.openInMaps} ↗</a>` : (APP.touristLoc ? '' : `<button class="btn-outline !py-1.5 !px-3 text-xs" onclick="findNearMe()">📍 ${tr.useMyLocation}</button>`)}
+    <div class="card p-3 mt-4 text-sm">
+      <div class="flex justify-between items-center flex-wrap gap-2">
+        <span>📍 ${hasGeo ? `${tr.exactLocationShared}${dist!=null?` · ${dist.toFixed(1)} ${tr.kmFromYou}`:''}` : tr.noExactLocation + ' ' + e.city + ', ' + e.state}</span>
+        ${hasGeo ? `<a class="btn-outline !py-1.5 !px-3 text-xs" target="_blank" rel="noopener" href="https://www.google.com/maps?q=${vendor.lat},${vendor.lng}">${tr.openInMaps} ↗</a>` : (APP.touristLoc ? '' : `<button class="btn-outline !py-1.5 !px-3 text-xs" onclick="findNearMe()">📍 ${tr.useMyLocation}</button>`)}
+      </div>
+      ${hasGeo ? `<div id="vendorLocMap" data-lat="${vendor.lat}" data-lng="${vendor.lng}" data-label="${(e.city+', '+e.state).replace(/"/g,'&quot;')}"></div>` : ''}
     </div>
     ${(e.languages && e.languages.length) ? `<div class="text-xs opacity-60 mt-2">🗣️ Speaks: ${e.languages.map(code=>(LANGUAGES[code]&&LANGUAGES[code].native)||code).join(', ')}</div>` : ''}
     ${(e.tags && e.tags.length) ? `<div class="text-xs opacity-60 mt-1">👥 Good for: ${e.tags.join(', ')}</div>` : ''}
@@ -1497,6 +1503,27 @@ function initCrowdMap(){
     bounds.push([APP.touristLoc.lat, APP.touristLoc.lng]);
   }
   try{ _leafletMap.fitBounds(bounds, {padding:[30,30]}); }catch(err){}
+}
+/* Small inline Leaflet map pinned to the host's exact shared GPS location,
+   shown directly on the experience page (in addition to the "Open in Maps"
+   external link) — instead of sending the tourist off-site to see where the
+   host is. Works identically for every vendor that has lat/lng saved,
+   whether they are one of the original demo hosts or a brand-new vendor who
+   just registered and shared their location via shareVendorLocation() —
+   both are read from the same APP.vendors record, so there's no special
+   case that would make this map appear only for "old" hosts. */
+let _vendorLocMap = null;
+function initVendorLocationMap(){
+  const el = document.getElementById('vendorLocMap');
+  if(!el || typeof L === 'undefined') return;
+  const lat = parseFloat(el.getAttribute('data-lat'));
+  const lng = parseFloat(el.getAttribute('data-lng'));
+  if(isNaN(lat) || isNaN(lng)) return;
+  if(_vendorLocMap){ _vendorLocMap.remove(); _vendorLocMap = null; }
+  _vendorLocMap = L.map('vendorLocMap', {zoomControl:true, attributionControl:true, scrollWheelZoom:false}).setView([lat, lng], 14);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:18, attribution:'© OpenStreetMap'}).addTo(_vendorLocMap);
+  const hostIcon = L.divIcon({className:'', html:'<div style="width:18px;height:18px;border-radius:50%;background:#E3A32B;border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);"></div>', iconSize:[18,18]});
+  L.marker([lat, lng], {icon:hostIcon}).addTo(_vendorLocMap).bindPopup('📍 ' + (el.getAttribute('data-label') || 'Host location')).openPopup();
 }
 
 function bookExperience(id){
@@ -2120,7 +2147,7 @@ function render(){
     default: html = renderHome();
   }
   root.innerHTML = html;
-  if(APP.view==='experience'){ setTimeout(initCrowdMap, 0); }
+  if(APP.view==='experience'){ setTimeout(initCrowdMap, 0); setTimeout(initVendorLocationMap, 0); }
   if(APP.drawerOpen){ /* drawer markup is injected separately, see toggleDrawer() */ }
 }
 
