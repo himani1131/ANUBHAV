@@ -133,21 +133,50 @@ const CAT = {
   village:{icon:'🌿',label:'Village Life',price:[500,1000],dur:[4,4],title:(s,h)=>`Village Life Experience with ${h}`,learn:['A slower, authentic pace of life','Local customs and daily routines','Shared meals with a local family']},
   teacoffee:{icon:'☕',label:'Tea/Coffee Farming',price:[300,600],dur:[2,2],title:(s,h)=>`Tea/Coffee Farm Walk with ${h}`,learn:['How the leaf or bean is grown and picked','Traditional processing methods','Tasting straight from the source']}
 };
-/* Real, activity-matched stock photos (Unsplash), keyed by category, so every
-   activity card shows a photo relevant to what's actually being taught. */
+/* Real, activity-matched stock photos (Unsplash CDN — genuine photographs, not
+   placeholders), keyed by category. Each category has 1-2 real photos so cards
+   in the same category aren't all visually identical. A same-category array is
+   picked from deterministically per-experience (see catPhoto) so e.g. two
+   different pottery listings show two different real pottery photos.
+   NOTE: these are stand-in photos for the demo/seed listings only. Once a real
+   community host registers (see "My Business & Photos"), their own uploaded
+   photos (e.photos) always take priority over these — see expPhoto(). */
 const CAT_IMG = {
-  fishing:'https://images.unsplash.com/photo-1445264718234-016ce8c9d10b?w=600&h=450&fit=crop&q=70',
-  food:'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=600&h=450&fit=crop&q=70',
-  art:'https://images.unsplash.com/photo-1582561833308-51c65f5a6b5f?w=600&h=450&fit=crop&q=70',
-  pottery:'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&h=450&fit=crop&q=70',
-  farming:'https://images.unsplash.com/photo-1500651230702-0e2d8a49d4ad?w=600&h=450&fit=crop&q=70',
-  handicrafts:'https://images.unsplash.com/photo-1528459801416-a9e53bbf4e17?w=600&h=450&fit=crop&q=70',
-  music:'https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=600&h=450&fit=crop&q=70',
-  dance:'https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=600&h=450&fit=crop&q=70',
-  village:'https://images.unsplash.com/photo-1524492412937-b28074a5d7da?w=600&h=450&fit=crop&q=70',
-  teacoffee:'https://images.unsplash.com/photo-1560493676-04071c5f467b?w=600&h=450&fit=crop&q=70'
+  fishing:['https://images.unsplash.com/photo-1445264718234-016ce8c9d10b?w=600&h=450&fit=crop&q=70'],
+  food:['https://images.unsplash.com/photo-1512058564366-18510be2db19?w=600&h=450&fit=crop&q=70'],
+  art:['https://images.unsplash.com/photo-1582561833308-51c65f5a6b5f?w=600&h=450&fit=crop&q=70'],
+  pottery:['https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&h=450&fit=crop&q=70','https://images.unsplash.com/photo-1744893611113-115452349aed?w=600&h=450&fit=crop&q=70'],
+  farming:['https://images.unsplash.com/photo-1500651230702-0e2d8a49d4ad?w=600&h=450&fit=crop&q=70'],
+  handicrafts:['https://images.unsplash.com/photo-1528459801416-a9e53bbf4e17?w=600&h=450&fit=crop&q=70'],
+  music:['https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=600&h=450&fit=crop&q=70'],
+  dance:['https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=600&h=450&fit=crop&q=70'],
+  village:['https://images.unsplash.com/photo-1524492412937-b28074a5d7da?w=600&h=450&fit=crop&q=70'],
+  teacoffee:['https://images.unsplash.com/photo-1560493676-04071c5f467b?w=600&h=450&fit=crop&q=70']
 };
-function catPhoto(cat){ return CAT_IMG[cat] || CAT_IMG.village; }
+/* Themed inline-SVG placeholder used ONLY if a real photo URL ever fails to
+   load (offline, blocked network, etc) — so a listing never shows a broken
+   image icon. Never used when a real photo loads fine. */
+function catFallbackSVG(cat){
+  const c = CAT[cat] || CAT.village;
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='600' height='450'><rect width='600' height='450' fill='%23F1E6D3'/><text x='50%' y='50%' font-size='90' text-anchor='middle' dominant-baseline='middle'>${c.icon}</text></svg>`;
+  return 'data:image/svg+xml,' + encodeURIComponent(svg).replace(/%23/g,'%23');
+}
+/* Picks a real photo for a given category, using the experience id to vary
+   which photo is shown when a category has more than one real photo. */
+function catPhoto(cat, seedKey){
+  const arr = CAT_IMG[cat] || CAT_IMG.village;
+  if(!seedKey) return arr[0];
+  let h = 0; for(let i=0;i<seedKey.length;i++) h = (h*31 + seedKey.charCodeAt(i)) >>> 0;
+  return arr[h % arr.length];
+}
+/* The photo actually shown for an experience: a real host's own uploaded
+   photos always come first; falls back to the category stock photo. */
+function expPhoto(e){
+  return (e.photos && e.photos.length) ? e.photos[0] : catPhoto(e.cat, e.id);
+}
+function expPhotoOnError(cat){
+  return `this.onerror=null;this.src='${catFallbackSVG(cat)}';`;
+}
 const REGIONS = {
   Maharashtra:{cities:['Mumbai','Pune','Nashik','Ratnagiri','Kolhapur','Konkan','Mahabaleshwar','Nagpur'],cats:['food','art','fishing','village'],hosts:['Asha Patil','Ravi More','Meena Kadam','Sunil Jadhav'],famous:'Gateway of India, Mumbai',crowd:'high'},
   Goa:{cities:['Panaji','North Goa','South Goa'],cats:['fishing','food','music','farming'],hosts:['Maria Fernandes',"Joaquim Braganza","Savio D'Souza","Teresa Colaco"],famous:'Baga Beach',crowd:'high'},
@@ -182,6 +211,39 @@ const REGION_LATLNG = {
   Chhattisgarh:[19.1383,81.9337], 'Jammu and Kashmir':[34.0837,74.7973]
 };
 Object.entries(REGIONS).forEach(([state,info])=>{ info.latlng = REGION_LATLNG[state] || [22.9734,78.6569]; });
+/* ============================= CROWD ESTIMATE (from real date/time, not a fixed label) =============================
+   There's no free, publicly-available live "how crowded is this place right now" sensor API — that data (e.g.
+   Google Popular Times) isn't open for third-party/self-service use. Instead of a hardcoded 'high'/'medium'/'low'
+   per state, this computes a live estimate from things that actually drive tourist crowds in India:
+     - each state's typical baseline popularity (REGIONS[state].crowd)
+     - whether it's currently a weekday or weekend, right now, on the visitor's device
+     - whether it's inside typical daytime visiting hours (10am–6pm gets busier)
+     - India's tourist season (Oct–Mar cool/peak season nationally; hill states peak Apr–Jun and Oct–Nov instead
+       of the hot plains months; Jul–Sep monsoon is quieter almost everywhere)
+   It recalculates every time it's called, using new Date(), so it genuinely changes with the real clock instead
+   of being frozen demo data. It's still an estimate/model, not a live occupancy sensor — labelled as such in the UI. */
+const HILL_STATES = new Set(['Himachal Pradesh','Uttarakhand','Jammu and Kashmir','Northeast India']);
+function computeCrowdLevel(state){
+  const info = REGIONS[state];
+  if(!info) return 'medium';
+  const baseScore = {low:0, medium:1, high:2}[info.crowd] ?? 1;
+  const now = new Date();
+  const day = now.getDay(); // 0=Sun..6=Sat
+  const hour = now.getHours();
+  const month = now.getMonth(); // 0=Jan..11=Dec
+  let score = baseScore;
+  if(day===0 || day===6) score += 1; // weekend bump
+  if(hour>=10 && hour<=18) score += 0.5; // daytime visiting hours
+  else score -= 0.5; // early morning / night, quieter
+  const isHill = HILL_STATES.has(state);
+  const peakSeason = isHill ? (month>=3 && month<=5) || (month>=9 && month<=10) : (month<=2 || month>=9);
+  const monsoon = !isHill && (month>=6 && month<=8);
+  if(peakSeason) score += 1;
+  if(monsoon) score -= 1;
+  if(score >= 2.5) return 'high';
+  if(score >= 1) return 'medium';
+  return 'low';
+}
 const REVIEW_POOL = [
   "An unforgettable afternoon — felt like family within minutes.",
   "So much more meaningful than a typical tour. Worth every rupee.",
@@ -587,6 +649,8 @@ const APP = {
   matcherResults: null, matcherLoading:false,
   tripResults: null, tripLoading:false,
   newExpForm: {title:'', cat:'food', state:'Maharashtra', city:'', price:600, duration:2},
+  hostBusinessForm: {expId:'', title:'', cat:'food', state:'Maharashtra', city:'', price:600, duration:2, maxGroup:4,
+    story:'', learn1:'', learn2:'', learn3:'', tags:[], languages:['en'], photos:[]},
   lastBooking: null,
   touristProfiles: {},
   touristLoc: null,
@@ -758,8 +822,10 @@ function doLogin(role){
   }
   APP.authRole = role;
   APP.authUser = lf.name.trim();
+  let hostIsFirstTime = false;
   if(role==='host'){
     APP.hostView = EXPERIENCES.some(e=>e.host===APP.authUser) ? APP.authUser : APP.hostView;
+    hostIsFirstTime = !EXPERIENCES.some(e=>e.host===APP.authUser) && !(APP.vendors[APP.authUser] && APP.vendors[APP.authUser].businessComplete);
     registerVendor({name:APP.authUser, phone:lf.phone.trim(), address:lf.address.trim(), lang:APP.uiLang, phoneVerified:true, aadhaarMasked:maskAadhaar(lf.aadhaar)});
   }
   let guideIsFirstLogin = false;
@@ -768,7 +834,12 @@ function doLogin(role){
     registerGuide({name:APP.authUser, phone:lf.phone.trim(), location:lf.location.trim(), lang:APP.uiLang, phoneVerified:true, aadhaarMasked:maskAadhaar(lf.aadhaar)});
   }
   toast(`Welcome, ${APP.authUser}! 🎉`);
-  navigate(role==='host'?'hostdashboard':role==='guide'?'guideupcoming':'home');
+  if(role==='host' && hostIsFirstTime){
+    APP.hostBusinessForm = {expId:'', title:'', cat:'food', state:lf.location||'Maharashtra', city:'', price:600, duration:2, maxGroup:4, story:'', learn1:'', learn2:'', learn3:'', tags:[], languages:[APP.uiLang], photos:[]};
+    navigate('hostbusiness');
+  } else {
+    navigate(role==='host'?'hostdashboard':role==='guide'?'guideupcoming':'home');
+  }
   if(role==='host'){
     setTimeout(()=>shareVendorLocation(true), 600);
   }
@@ -949,14 +1020,27 @@ async function loadBackend(){
 function friendlyGeoError(err){
   const msg = (err && err.message) || '';
   if(err && err.code===1 || /permissions policy|not allowed|denied|disabled/i.test(msg)){
-    return "📍 Location is blocked in this preview window. Open this page in its own browser tab (not embedded) and allow location access when prompted — it'll work there.";
+    return "📍 Location access was blocked. Check your browser's site settings (the padlock/ⓘ icon next to the address bar) and allow Location for this page, then try again.";
   }
-  if(err && err.code===2){ return "Couldn't determine your location right now — please try again in a moment."; }
-  if(err && err.code===3){ return "Location request timed out — please try again."; }
+  if(err && err.code===2){ return "Couldn't determine your location right now — please check your device's location/GPS is turned on and try again."; }
+  if(err && err.code===3){ return "Location request timed out — please try again, ideally with a clearer GPS/network signal."; }
   return 'Could not get your location: ' + (msg || 'unknown error');
 }
+/* Geolocation needs a "secure context": https, or localhost. It will silently
+   fail (or throw) on a plain http:// page or a file:// page opened directly
+   from disk in most browsers — that's the most common real-world reason this
+   "doesn't work". We check for that up front and say so clearly, instead of
+   leaving the user stuck on a generic error. */
+function geoPreflight(){
+  if(!navigator.geolocation){ toast('Location is not supported on this device/browser.'); return false; }
+  if(typeof window.isSecureContext === 'boolean' && !window.isSecureContext){
+    toast('📍 Your browser blocks location access on this page because it isn\'t loaded over HTTPS (or localhost). Host this file on a real web server (or https) to enable location.');
+    return false;
+  }
+  return true;
+}
 function shareVendorLocation(silent){
-  if(!navigator.geolocation){ if(!silent) toast('Location is not supported on this device/browser.'); return; }
+  if(!geoPreflight()){ return; }
   if(!silent) toast('Requesting your location…');
   try{
     navigator.geolocation.getCurrentPosition(
@@ -967,7 +1051,7 @@ function shareVendorLocation(silent){
         render();
       },
       err=>{ toast(friendlyGeoError(err)); },
-      {enableHighAccuracy:true, timeout:10000}
+      {enableHighAccuracy:true, timeout:10000, maximumAge:60000}
     );
   }catch(err){
     toast(friendlyGeoError(err));
@@ -986,22 +1070,31 @@ function distanceKm(lat1,lng1,lat2,lng2){
   const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLng/2)**2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
-/* Given a crowded state, find nearby states that are medium/low crowd,
-   sorted by distance — used to power the "go here instead" map panel. */
-function lessCrowdedNearby(state, limit){
+/* Given a crowded state, find NEARBY states (within a real-world reasonable
+   travel radius) that are currently medium/low crowd right now, sorted by
+   actual distance — used to power the "go here instead" map panel. Capped at
+   maxKm so this never suggests somewhere on the other side of the country as
+   if it were "nearby". If nothing qualifies within the cap, the radius is
+   widened once rather than silently returning nothing. */
+function lessCrowdedNearby(state, limit, maxKm){
   const here = REGIONS[state];
   if(!here) return [];
   const [lat1,lng1] = here.latlng;
-  return Object.entries(REGIONS)
-    .filter(([s,info])=> s!==state && info.crowd!=='high')
-    .map(([s,info])=>({state:s, famous:info.famous, crowd:info.crowd, dist: distanceKm(lat1,lng1, info.latlng[0], info.latlng[1])}))
+  const cap = maxKm || 700;
+  const build = radius => Object.entries(REGIONS)
+    .filter(([s,info])=> s!==state && computeCrowdLevel(s)!=='high')
+    .map(([s,info])=>({state:s, famous:info.famous, crowd:computeCrowdLevel(s), dist: distanceKm(lat1,lng1, info.latlng[0], info.latlng[1])}))
+    .filter(a=>a.dist<=radius)
     .sort((a,b)=>a.dist-b.dist)
     .slice(0, limit||3);
+  let out = build(cap);
+  if(!out.length) out = build(cap*2); // widen once if nothing genuinely nearby qualifies
+  return out;
 }
 /* Ask the tourist's browser for their location so we can show them how far
    each host is and sort experiences by distance. */
 function findNearMe(){
-  if(!navigator.geolocation){ toast('Location is not supported on this device/browser.'); return; }
+  if(!geoPreflight()){ return; }
   toast('📍 Finding community hosts near you…');
   try{
     navigator.geolocation.getCurrentPosition(
@@ -1011,7 +1104,7 @@ function findNearMe(){
         render();
       },
       err=>{ toast(friendlyGeoError(err)); },
-      {enableHighAccuracy:true, timeout:10000}
+      {enableHighAccuracy:true, timeout:10000, maximumAge:60000}
     );
   }catch(err){
     toast(friendlyGeoError(err));
@@ -1138,6 +1231,7 @@ function computeNavLinks(tr, role){
   if(role==='host'){
     links = [
       {id:'hostdashboard', label:tr.navHome, show:true},
+      {id:'hostbusiness', label:'My Business & Photos', show:true},
       {id:'hostrevenue', label:'Revenue', show:true},
       {id:'hostreviews', label:'My Reviews/Feedback', show:true},
       {id:'hostupcoming', label:'Upcoming', show:true},
@@ -1231,7 +1325,7 @@ function expCard(e, distKm){
   return `
   <div class="card overflow-hidden cursor-pointer" onclick="navigate('experience',{id:'${e.id}'})">
     <div class="photo-tile-wrap">
-      <img class="photo-tile" loading="lazy" src="${catPhoto(e.cat)}" alt="${e.title}">
+      <img class="photo-tile" loading="lazy" src="${expPhoto(e)}" alt="${e.title}" onerror="${expPhotoOnError(e.cat)}">
       <div class="photo-emoji-badge">${e.icon}</div>
     </div>
     <div class="p-4">
@@ -1241,7 +1335,7 @@ function expCard(e, distKm){
       </div>
       <div class="text-xs opacity-60 mt-1">${e.city}, ${e.state}${typeof distKm==='number' ? ` · 📍 ${distKm.toFixed(1)} km away` : ''}</div>
       <div class="flex justify-between items-center mt-3">
-        <div class="text-sm">⭐ ${e.rating} <span class="opacity-50">(${e.reviewCount})</span></div>
+        <div class="text-sm">${e.reviewCount ? `⭐ ${e.rating} <span class="opacity-50">(${e.reviewCount})</span>` : `<span class="opacity-50">New listing</span>`}</div>
         <div class="font-bold text-madder">${fmt(e.price)}</div>
       </div>
     </div>
@@ -1299,14 +1393,15 @@ function renderExperienceView(){
   ${renderNav('explore')}
   <div class="max-w-3xl mx-auto px-5 py-8 fade-in">
     <div class="photo-tile-wrap">
-      <img class="photo-tile-lg" src="${catPhoto(e.cat)}" alt="${e.title}">
+      <img class="photo-tile-lg" src="${expPhoto(e)}" alt="${e.title}" onerror="${expPhotoOnError(e.cat)}">
       <div class="photo-emoji-badge" style="font-size:1.6rem;width:44px;height:44px;">${e.icon}</div>
     </div>
+    ${(e.photos && e.photos.length>1) ? `<div class="flex gap-2 mt-2 overflow-x-auto">${e.photos.map(p=>`<img src="${p}" class="rounded-lg object-cover" style="width:84px;height:64px;flex:none;">`).join('')}</div>` : ''}
     <div class="mt-5 flex justify-between items-start flex-wrap gap-3">
       <div>
         <div class="font-display text-2xl font-bold text-indigo-deep">${e.title}</div>
         <div class="opacity-60 text-sm mt-1">${e.city}, ${e.state} · ${tr.hostedBy} ${e.host} ${e.verified?'<span class="badge-verified">✓ Verified</span>':''}</div>
-        <div class="text-sm mt-1">⭐ ${e.rating} <span class="opacity-50">(${e.reviewCount} ${tr.reviewsLabel.toLowerCase()})</span></div>
+        <div class="text-sm mt-1">${e.reviewCount ? `⭐ ${e.rating} <span class="opacity-50">(${e.reviewCount} ${tr.reviewsLabel.toLowerCase()})</span>` : `<span class="opacity-50">New listing — no reviews yet</span>`}</div>
       </div>
       <div class="text-right">
         <div class="font-bold text-2xl text-madder">${fmt(e.price)}</div>
@@ -1317,6 +1412,8 @@ function renderExperienceView(){
       <span>📍 ${hasGeo ? `${tr.exactLocationShared}${dist!=null?` · ${dist.toFixed(1)} ${tr.kmFromYou}`:''}` : tr.noExactLocation + ' ' + e.city + ', ' + e.state}</span>
       ${hasGeo ? `<a class="btn-outline !py-1.5 !px-3 text-xs" target="_blank" rel="noopener" href="https://www.google.com/maps?q=${vendor.lat},${vendor.lng}">${tr.openInMaps} ↗</a>` : (APP.touristLoc ? '' : `<button class="btn-outline !py-1.5 !px-3 text-xs" onclick="findNearMe()">📍 ${tr.useMyLocation}</button>`)}
     </div>
+    ${(e.languages && e.languages.length) ? `<div class="text-xs opacity-60 mt-2">🗣️ Speaks: ${e.languages.map(code=>(LANGUAGES[code]&&LANGUAGES[code].native)||code).join(', ')}</div>` : ''}
+    ${(e.tags && e.tags.length) ? `<div class="text-xs opacity-60 mt-1">👥 Good for: ${e.tags.join(', ')}</div>` : ''}
     ${renderCrowdPanel(e)}
     <div class="mt-5 opacity-80 leading-relaxed">${e.story}</div>
     <div class="mt-5">
@@ -1325,7 +1422,7 @@ function renderExperienceView(){
     </div>
     <div class="mt-5">
       <div class="font-display font-bold text-indigo-deep mb-2">${tr.reviewsLabel}</div>
-      <div class="space-y-2">${e.reviews.map(r=>`<div class="card p-3 text-sm"><b>${r.user}</b> · ⭐${r.rating}<div class="opacity-70 mt-1">${r.text}</div></div>`).join('')}</div>
+      <div class="space-y-2">${e.reviews.map(r=>`<div class="card p-3 text-sm"><b>${r.user}</b> · ⭐${r.rating}<div class="opacity-70 mt-1">${r.text}</div></div>`).join('') || `<div class="opacity-60 text-sm">No reviews yet — be the first to book!</div>`}</div>
     </div>
     <div class="card p-5 mt-6 stitch">
       <div class="font-display font-bold text-indigo-deep mb-3">${tr.bookThisExp}</div>
@@ -1343,8 +1440,10 @@ function renderCrowdPanel(e){
   const info = REGIONS[e.state];
   if(!info) return '';
   const tr = TRANSLATIONS[APP.uiLang];
-  if(info.crowd !== 'high'){
-    return `<div class="card p-3 mt-3 text-sm flex items-center gap-2"><span class="badge-crowd-low">🟢</span><span class="opacity-70">${e.city}, ${e.state} ${tr.lowCrowd}</span></div>`;
+  const level = computeCrowdLevel(e.state);
+  const estNote = `<div class="text-[11px] opacity-50 mt-1">Estimated from today's date, time and season — not a live occupancy sensor.</div>`;
+  if(level !== 'high'){
+    return `<div class="card p-3 mt-3 text-sm"><div class="flex items-center gap-2"><span class="badge-crowd-low">🟢</span><span class="opacity-70">${e.city}, ${e.state} ${tr.lowCrowd}</span></div>${estNote}</div>`;
   }
   const alts = lessCrowdedNearby(e.state, 3);
   const altListHtml = alts.map(a=>`
@@ -1358,8 +1457,9 @@ function renderCrowdPanel(e){
       <span class="badge-crowd-high">🔴 ${tr.crowdedNow}</span>
       <button class="btn-outline !py-1 !px-2 text-xs" onclick="findNearMe()">📍 ${tr.syncMyLocation}</button>
     </div>
+    ${estNote}
     <div id="crowdMap" data-exp-id="${e.id}"></div>
-    <div class="text-xs opacity-60 mt-2">🔴 red pin = ${e.city}, ${e.state} (crowded) · 🟢 green pins = nearby, less-crowded places you could go instead</div>
+    <div class="text-xs opacity-60 mt-2">🔴 red pin = ${e.city}, ${e.state} (crowded) · 🟢 green pins = nearby (within a reasonable travel radius), less-crowded places you could go instead</div>
     <div class="mt-3">
       <div class="font-semibold text-sm text-indigo-deep mb-1">${tr.nearbyLessCrowded}</div>
       ${altListHtml || `<div class="opacity-60 text-sm">${tr.noNearbyAlt}</div>`}
@@ -1515,11 +1615,165 @@ function renderHostDashboard(){
       <button class="btn-outline text-xs" onclick="shareVendorLocation()">📍 ${tr.shareExactLocation}</button>
     </div>
     ${pending.length ? `<div class="card p-4 mb-6 stitch"><span class="font-semibold">${pending.length} new booking request${pending.length>1?'s':''} waiting</span> — <span class="underline cursor-pointer text-indigo-deep" onclick="navigate('hostnotifications')">view notifications</span></div>` : ''}
+    ${!EXPERIENCES.some(e=>e.host===vendorName) ? `<div class="card p-4 mb-6 stitch"><span class="font-semibold">👋 Finish setting up your listing</span> — add your activity details and real photos so tourists can find and book you. <span class="underline cursor-pointer text-indigo-deep" onclick="navigate('hostbusiness')">Set up my business →</span></div>` : ''}
     <div class="font-display font-bold text-indigo-deep mb-2">${tr.upcomingAppts||tr.upcomingBookings}</div>
     <div class="space-y-3">
       ${upcoming.map(n=>`<div class="card p-3 text-sm">${n.title} · ${n.date} ${n.time} · ${n.people} people</div>`).join('') || `<div class="opacity-60 text-sm">No upcoming bookings yet.</div>`}
     </div>
   </div>`;
+}
+
+/* ============================= HOST BUSINESS INFO + PHOTOS =============================
+   Everything a real community host fills in about their own activity — the same set of
+   columns shown to tourists on the activity detail page (renderExperienceView): title,
+   category, city/state, price, duration, group size, the story, what you'll learn, tags,
+   languages spoken, and real photos of the actual activity/place. First-time hosts land
+   here right after registering; they (or the admin) can come back and edit any time via
+   "My Business & Photos" in the host menu. */
+function renderHostBusiness(){
+  const tr = TRANSLATIONS[APP.uiLang];
+  const vendorName = APP.authUser;
+  const f = APP.hostBusinessForm;
+  const existing = EXPERIENCES.find(e=>e.host===vendorName);
+  if(existing && !f.expId){
+    Object.assign(f, {
+      expId: existing.id, title: existing.title, cat: existing.cat, state: existing.state, city: existing.city,
+      price: existing.price, duration: existing.duration, maxGroup: existing.maxGroup, story: existing.story,
+      learn1: existing.learn[0]||'', learn2: existing.learn[1]||'', learn3: existing.learn[2]||'',
+      tags: existing.tags.slice(), languages: (existing.languages||['en']).slice(), photos: (existing.photos||[]).slice()
+    });
+  }
+  const isFirstTime = !existing;
+  return `
+  ${renderNav('hostbusiness')}
+  <div class="max-w-2xl mx-auto px-5 py-8">
+    <div class="font-display text-xl font-bold text-indigo-deep">${isFirstTime ? '👋 Tell us about your activity' : 'My Business & Photos'}</div>
+    <div class="opacity-70 text-sm mt-1 mb-5">${isFirstTime ? 'This is what tourists will see on your listing. Fill in every field so they know exactly what to expect — and add real photos of the actual place and activity.' : 'Keep this up to date — it\'s exactly what tourists see when they open your listing.'}</div>
+    <div class="card p-5 space-y-4">
+      <div>
+        <label class="text-xs font-semibold opacity-70 block mb-1">Activity title *</label>
+        <input type="text" placeholder="e.g. Traditional Konkan Cooking with Asha" value="${f.title}" oninput="APP.hostBusinessForm.title=this.value">
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs font-semibold opacity-70 block mb-1">Category *</label>
+          <select onchange="APP.hostBusinessForm.cat=this.value;render();">${Object.entries(CAT).map(([k,c])=>`<option value="${k}" ${f.cat===k?'selected':''}>${c.icon} ${c.label}</option>`).join('')}</select>
+        </div>
+        <div>
+          <label class="text-xs font-semibold opacity-70 block mb-1">State *</label>
+          <select onchange="APP.hostBusinessForm.state=this.value">${Object.keys(REGIONS).map(s=>`<option ${f.state===s?'selected':''}>${s}</option>`).join('')}</select>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs font-semibold opacity-70 block mb-1">City / village *</label>
+          <input type="text" placeholder="e.g. Ratnagiri" value="${f.city}" oninput="APP.hostBusinessForm.city=this.value">
+        </div>
+        <div>
+          <label class="text-xs font-semibold opacity-70 block mb-1">Price per person (₹) *</label>
+          <input type="number" min="0" value="${f.price}" oninput="APP.hostBusinessForm.price=Number(this.value)||0">
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs font-semibold opacity-70 block mb-1">Duration (hours) *</label>
+          <input type="number" min="0.5" step="0.5" value="${f.duration}" oninput="APP.hostBusinessForm.duration=Number(this.value)||1">
+        </div>
+        <div>
+          <label class="text-xs font-semibold opacity-70 block mb-1">Max group size *</label>
+          <input type="number" min="1" value="${f.maxGroup}" oninput="APP.hostBusinessForm.maxGroup=Number(this.value)||1">
+        </div>
+      </div>
+      <div>
+        <label class="text-xs font-semibold opacity-70 block mb-1">Your story *</label>
+        <textarea rows="3" placeholder="How did you learn this? What makes your experience special?" oninput="APP.hostBusinessForm.story=this.value">${f.story}</textarea>
+      </div>
+      <div>
+        <label class="text-xs font-semibold opacity-70 block mb-1">What tourists will learn (3 points) *</label>
+        <input type="text" class="mb-2" placeholder="Point 1" value="${f.learn1}" oninput="APP.hostBusinessForm.learn1=this.value">
+        <input type="text" class="mb-2" placeholder="Point 2" value="${f.learn2}" oninput="APP.hostBusinessForm.learn2=this.value">
+        <input type="text" placeholder="Point 3" value="${f.learn3}" oninput="APP.hostBusinessForm.learn3=this.value">
+      </div>
+      <div>
+        <label class="text-xs font-semibold opacity-70 block mb-1">Good for (tags)</label>
+        <div class="flex gap-2 flex-wrap">${['solo','couple','family','group'].map(tg=>`<span class="chip ${f.tags.includes(tg)?'active':''}" onclick="toggleHostTag('${tg}')">${tg}</span>`).join('')}</div>
+      </div>
+      <div>
+        <label class="text-xs font-semibold opacity-70 block mb-1">Languages you speak</label>
+        <div class="flex gap-2 flex-wrap">${Object.entries(LANGUAGES).map(([code,l])=>`<span class="chip ${f.languages.includes(code)?'active':''}" onclick="toggleHostLang('${code}')">${l.native}</span>`).join('')}</div>
+      </div>
+      <div>
+        <label class="text-xs font-semibold opacity-70 block mb-1">Photos of your real activity/place *</label>
+        <div class="text-[11px] opacity-60 mb-2">Add a few real photos — tourists trust real photos far more than stock images. These replace the placeholder photo on your listing.</div>
+        <input type="file" accept="image/*" multiple onchange="addHostPhotos(this.files)">
+        ${f.photos.length ? `<div class="flex gap-2 flex-wrap mt-2">${f.photos.map((p,i)=>`<div class="relative"><img src="${p}" style="width:84px;height:64px;object-fit:cover;border-radius:8px;"><span class="absolute" style="top:-6px;right:-6px;background:var(--madder);color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;line-height:18px;text-align:center;cursor:pointer;" onclick="removeHostPhoto(${i})">✕</span></div>`).join('')}</div>` : `<div class="text-xs opacity-50 mt-2">No photos added yet.</div>`}
+      </div>
+      <button class="btn-primary w-full" onclick="saveHostBusiness()">${isFirstTime ? 'Save & go to my dashboard' : 'Save changes'}</button>
+    </div>
+  </div>`;
+}
+function toggleHostTag(tag){
+  const f = APP.hostBusinessForm;
+  f.tags = f.tags.includes(tag) ? f.tags.filter(t=>t!==tag) : f.tags.concat(tag);
+  render();
+}
+function toggleHostLang(code){
+  const f = APP.hostBusinessForm;
+  f.languages = f.languages.includes(code) ? f.languages.filter(l=>l!==code) : f.languages.concat(code);
+  render();
+}
+function addHostPhotos(fileList){
+  const files = Array.from(fileList || []).slice(0, 8 - APP.hostBusinessForm.photos.length);
+  if(!files.length) return;
+  let remaining = files.length;
+  files.forEach(file=>{
+    const reader = new FileReader();
+    reader.onload = ev=>{
+      APP.hostBusinessForm.photos.push(ev.target.result);
+      remaining--;
+      if(remaining<=0) render();
+    };
+    reader.onerror = ()=>{ toast('Could not read that photo — please try another file.'); remaining--; if(remaining<=0) render(); };
+    reader.readAsDataURL(file);
+  });
+}
+function removeHostPhoto(idx){
+  APP.hostBusinessForm.photos.splice(idx,1);
+  render();
+}
+function saveHostBusiness(){
+  const f = APP.hostBusinessForm;
+  const vendorName = APP.authUser;
+  if(!f.title.trim() || !f.city.trim() || !f.story.trim() || !f.learn1.trim() || !f.price || !f.duration || !f.maxGroup){
+    toast('Please fill in every required field (title, city, price, duration, group size, story, and at least the first "what you will learn" point).');
+    return;
+  }
+  if(!f.photos.length){
+    toast('Please add at least one real photo of your activity or place before saving.');
+    return;
+  }
+  const learn = [f.learn1.trim(), f.learn2.trim(), f.learn3.trim()].filter(Boolean);
+  const existingIdx = EXPERIENCES.findIndex(e=>e.host===vendorName);
+  const payload = {
+    state: f.state, city: f.city.trim(), cat: f.cat, host: vendorName,
+    title: f.title.trim(), price: f.price, duration: f.duration, maxGroup: f.maxGroup,
+    story: f.story.trim(), learn, icon: CAT[f.cat].icon, tags: f.tags.slice(),
+    languages: f.languages.slice(), photos: f.photos.slice()
+  };
+  if(existingIdx>=0){
+    Object.assign(EXPERIENCES[existingIdx], payload);
+    f.expId = EXPERIENCES[existingIdx].id;
+  } else {
+    const id = `${vendorName.replace(/\s+/g,'-').toLowerCase()}-${f.cat}-${Date.now().toString().slice(-5)}`;
+    EXPERIENCES.push(Object.assign({
+      id, verified:false, rating:0, reviewCount:0, reviews:[]
+    }, payload));
+    f.expId = id;
+  }
+  const vendor = APP.vendors[vendorName] || {};
+  registerVendor(Object.assign({}, vendor, {name:vendorName, businessComplete:true}));
+  toast('✅ Your business details and photos are saved — tourists can now see your real listing.');
+  navigate('hostdashboard');
 }
 function renderHostRevenue(){
   const tr = TRANSLATIONS[APP.uiLang];
@@ -1836,7 +2090,7 @@ function render(){
   const root = document.getElementById('app');
   if(!root) return;
   if(!APP.langChosen){ root.innerHTML = renderLangGate(); return; }
-  const protectedViews = ['touristdashboard','hostdashboard','hostrevenue','hostreviews','hostupcoming','hostnotifications','guidedashboard','guiderevenue','guidereviews','guideupcoming','admin','profile'];
+  const protectedViews = ['touristdashboard','hostdashboard','hostbusiness','hostrevenue','hostreviews','hostupcoming','hostnotifications','guidedashboard','guiderevenue','guidereviews','guideupcoming','admin','profile'];
   if(!APP.authRole && (APP.view==='login' || protectedViews.includes(APP.view))){
     root.innerHTML = renderLogin();
     return;
@@ -1851,6 +2105,7 @@ function render(){
     case 'profile': html = renderProfileView(); break;
     case 'touristdashboard': html = renderTouristDashboard(); break;
     case 'hostdashboard': html = renderHostDashboard(); break;
+    case 'hostbusiness': html = renderHostBusiness(); break;
     case 'hostrevenue': html = renderHostRevenue(); break;
     case 'hostreviews': html = renderHostReviews(); break;
     case 'hostupcoming': html = renderHostUpcoming(); break;
