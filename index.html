@@ -885,12 +885,26 @@ function maskAadhaar(num){
 // Using the classic script-tag SDK (loaded in <head>) instead of ES module imports so this
 // keeps working when the file is opened directly (file://) as well as when it's hosted.
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+ // Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyBCjQ-zFH1xgMlmGFJh4ijTn1F_Li4pGhg",
+  authDomain: "agriconnect-acfe7.firebaseapp.com",
+  databaseURL: "https://agriconnect-acfe7-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "agriconnect-acfe7",
+  storageBucket: "agriconnect-acfe7.firebasestorage.app",
+  messagingSenderId: "453755230384",
+  appId: "1:453755230384:web:8fb315595a45b628108375",
+  measurementId: "G-Y1B6LSJF2D"
+};
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
 };
 let db = null;
 let firebaseReady = false;
