@@ -117,6 +117,7 @@
 <!-- Firebase classic script-tag SDK (works over file://, no build step / ES module imports needed) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 
 <script>
 /* ============================= DATA ============================= */
@@ -570,7 +571,7 @@ const APP = {
   langChosen:false, uiLang:'en',
   splashDone:false, drawerOpen:false, remindedBookingIds:[],
   authRole:null, authUser:null, authRoleTab:'tourist',
-  loginForm:{name:'', contact:'', password:'', address:'', location:'Maharashtra'},
+  loginForm:{name:'', contact:'', password:'', address:'', location:'Maharashtra', phone:'', aadhaar:'', otp:'', otpSent:false, phoneVerified:false, otpBusy:false},
   hostView: 'Asha Patil',
   bookings: [],
   favorites: [],
@@ -714,11 +715,28 @@ function renderLogin(){
       </div>
       <div class="text-[11px] text-madder text-center -mt-1 mb-3">* All fields are required</div>
       <div class="grid grid-cols-2 gap-3">
-        <input type="text" placeholder="${t.name} *" value="${lf.name}" onchange="APP.loginForm.name=this.value" oninput="APP.loginForm.name=this.value">
-        <input type="text" placeholder="${t.phone} / ${t.email} *" value="${lf.contact}" onchange="APP.loginForm.contact=this.value" oninput="APP.loginForm.contact=this.value">
+        <input class="col-span-2" type="text" placeholder="${t.name} *" value="${lf.name}" onchange="APP.loginForm.name=this.value" oninput="APP.loginForm.name=this.value">
+
+        <input class="col-span-2" type="text" inputmode="numeric" maxlength="10" placeholder="10-digit mobile number *" value="${lf.phone}" ${lf.phoneVerified?'disabled':''} oninput="APP.loginForm.phone=this.value.replace(/\\D/g,'').slice(0,10);this.value=APP.loginForm.phone;">
+
+        ${lf.phoneVerified
+          ? `<div class="col-span-2 text-xs font-semibold text-palm bg-sandstone rounded-lg p-2 flex items-center justify-between"><span>✅ Phone number verified</span><span class="underline cursor-pointer opacity-70" onclick="resetPhoneVerification()">Change number</span></div>`
+          : (lf.otpSent
+            ? `<input type="text" inputmode="numeric" maxlength="6" placeholder="Enter 6-digit OTP" value="${lf.otp}" oninput="APP.loginForm.otp=this.value.replace(/\\D/g,'').slice(0,6);this.value=APP.loginForm.otp;">
+               <button type="button" class="btn-dark !py-2" ${lf.otpBusy?'disabled':''} onclick="verifyOtp()">${lf.otpBusy?'Verifying…':'Verify OTP'}</button>
+               <span class="col-span-2 text-xs underline cursor-pointer opacity-70 text-center" onclick="sendOtp()">Didn't get it? Resend OTP</span>`
+            : `<button type="button" class="col-span-2 btn-outline !py-2" ${lf.otpBusy?'disabled':''} onclick="sendOtp()">${lf.otpBusy?'Sending OTP…':'📲 Send OTP to verify number'}</button>`)
+        }
+
+        <div id="recaptcha-container" class="col-span-2"></div>
+
         <input class="col-span-2" type="password" placeholder="${t.password} *" value="${lf.password}" onchange="APP.loginForm.password=this.value" oninput="APP.loginForm.password=this.value">
         ${role==='host' ? `<input class="col-span-2" type="text" placeholder="${t.address} *" value="${lf.address}" onchange="APP.loginForm.address=this.value" oninput="APP.loginForm.address=this.value">` : ''}
         ${role==='guide' ? `<div class="col-span-2"><label class="text-xs font-semibold opacity-70 block mb-1">${t.location} *</label><select onchange="APP.loginForm.location=this.value">${Object.keys(REGIONS).map(s=>`<option ${lf.location===s?'selected':''}>${s}</option>`).join('')}</select></div>` : ''}
+        ${(role==='host'||role==='guide') ? `
+          <input class="col-span-2" type="text" inputmode="numeric" maxlength="12" placeholder="Aadhaar number (12 digits) *" value="${lf.aadhaar}" ${lf.phoneVerified?'':'disabled'} oninput="APP.loginForm.aadhaar=this.value.replace(/\\D/g,'').slice(0,12);this.value=APP.loginForm.aadhaar;">
+          <div class="col-span-2 text-[11px] opacity-60 -mt-2">${lf.phoneVerified ? 'We check this is a validly-formatted Aadhaar number. It is not cross-checked with UIDAI records.' : 'Verify your phone number first to enable this field.'}</div>
+        ` : ''}
         <button type="button" class="col-span-2 btn-primary w-full" onclick="doLogin('${role}')">${t.login} — ${roleLabel[role]}</button>
       </div>
       ${role==='host' ? `<div class="text-xs opacity-60 text-center mt-3 bg-sandstone rounded-lg p-2">📱 ${t.vendorRegisterNote}</div>` : ''}
@@ -733,16 +751,21 @@ function renderLogin(){
 function doLogin(role){
   const lf = APP.loginForm;
   if(!lf.name.trim() || !lf.password.trim()){ toast('Please enter your name and password to log in.'); return; }
+  if(!/^\d{10}$/.test(lf.phone.trim())){ toast('Please enter a valid 10-digit mobile number.'); return; }
+  if(!lf.phoneVerified){ toast('Please verify your mobile number with the OTP first.'); return; }
+  if((role==='host' || role==='guide') && !isValidAadhaarFormat(lf.aadhaar)){
+    toast('Please enter a valid 12-digit Aadhaar number.'); return;
+  }
   APP.authRole = role;
   APP.authUser = lf.name.trim();
   if(role==='host'){
     APP.hostView = EXPERIENCES.some(e=>e.host===APP.authUser) ? APP.authUser : APP.hostView;
-    registerVendor({name:APP.authUser, phone:lf.contact.trim(), address:lf.address.trim(), lang:APP.uiLang});
+    registerVendor({name:APP.authUser, phone:lf.phone.trim(), address:lf.address.trim(), lang:APP.uiLang, phoneVerified:true, aadhaarMasked:maskAadhaar(lf.aadhaar)});
   }
   let guideIsFirstLogin = false;
   if(role==='guide'){
     guideIsFirstLogin = !APP.guides[APP.authUser] || !APP.guides[APP.authUser].profileComplete;
-    registerGuide({name:APP.authUser, phone:lf.contact.trim(), location:lf.location.trim(), lang:APP.uiLang});
+    registerGuide({name:APP.authUser, phone:lf.phone.trim(), location:lf.location.trim(), lang:APP.uiLang, phoneVerified:true, aadhaarMasked:maskAadhaar(lf.aadhaar)});
   }
   toast(`Welcome, ${APP.authUser}! 🎉`);
   navigate(role==='host'?'hostdashboard':role==='guide'?'guideupcoming':'home');
@@ -756,10 +779,104 @@ function doLogin(role){
 function logout(){
   APP.authRole = null;
   APP.authUser = null;
-  APP.loginForm = {name:'', contact:'', password:'', address:'', location:'Maharashtra'};
+  APP.loginForm = {name:'', contact:'', password:'', address:'', location:'Maharashtra', phone:'', aadhaar:'', otp:'', otpSent:false, phoneVerified:false, otpBusy:false};
+  confirmationResult = null;
   APP.view = 'login';
   navigate('login');
   render();
+}
+
+/* ============================= PHONE OTP VERIFICATION (Firebase Auth) ============================= */
+let recaptchaVerifier = null;
+let confirmationResult = null;
+
+function resetPhoneVerification(){
+  APP.loginForm.phoneVerified = false;
+  APP.loginForm.otpSent = false;
+  APP.loginForm.otp = '';
+  confirmationResult = null;
+  render();
+}
+
+function sendOtp(){
+  const lf = APP.loginForm;
+  const phone = lf.phone.trim();
+  if(!/^\d{10}$/.test(phone)){ toast('Enter a valid 10-digit mobile number first.'); return; }
+  if(typeof firebase === 'undefined' || !firebase.auth){
+    toast('⚠️ Phone verification needs Firebase to be configured on this deployment.');
+    return;
+  }
+  lf.otpBusy = true; render();
+  try{
+    if(recaptchaVerifier){ try{ recaptchaVerifier.clear(); }catch(e){} }
+    recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {size:'invisible'});
+    firebase.auth().signInWithPhoneNumber('+91' + phone, recaptchaVerifier)
+      .then(result=>{
+        confirmationResult = result;
+        lf.otpSent = true;
+        lf.otpBusy = false;
+        toast('📲 OTP sent to +91 ' + phone);
+        render();
+      })
+      .catch(err=>{
+        lf.otpBusy = false;
+        toast('Could not send OTP: ' + (err && err.message ? err.message : 'please try again.'));
+        render();
+      });
+  }catch(err){
+    lf.otpBusy = false;
+    toast('Could not start phone verification: ' + (err && err.message ? err.message : 'please try again.'));
+    render();
+  }
+}
+
+function verifyOtp(){
+  const lf = APP.loginForm;
+  if(!confirmationResult){ toast('Please request an OTP first.'); return; }
+  if(!/^\d{6}$/.test(lf.otp.trim())){ toast('Enter the 6-digit OTP.'); return; }
+  lf.otpBusy = true; render();
+  confirmationResult.confirm(lf.otp.trim())
+    .then(()=>{
+      lf.phoneVerified = true;
+      lf.otpBusy = false;
+      toast('✅ Phone number verified!');
+      render();
+    })
+    .catch(err=>{
+      lf.otpBusy = false;
+      toast('Incorrect or expired OTP — please try again.');
+      render();
+    });
+}
+
+/* ============================= AADHAAR FORMAT VALIDATION (Verhoeff checksum) =============================
+   Note: this only confirms the number is a *validly-formatted* Aadhaar number (12 digits passing the
+   same checksum algorithm UIDAI uses). It does NOT verify the number against UIDAI/government records or
+   confirm it is genuinely linked to the phone number above — that requires UIDAI-licensed eKYC access,
+   which isn't available for self-service or free use. */
+const VERHOEFF_D = [
+  [0,1,2,3,4,5,6,7,8,9],[1,2,3,4,0,6,7,8,9,5],[2,3,4,0,1,7,8,9,5,6],[3,4,0,1,2,8,9,5,6,7],
+  [4,0,1,2,3,9,5,6,7,8],[5,9,8,7,6,0,4,3,2,1],[6,5,9,8,7,1,0,4,3,2],[7,6,5,9,8,2,1,0,4,3],
+  [8,7,6,5,9,3,2,1,0,4],[9,8,7,6,5,4,3,2,1,0]
+];
+const VERHOEFF_P = [
+  [0,1,2,3,4,5,6,7,8,9],[1,5,7,6,2,8,3,0,9,4],[5,8,0,3,7,9,6,1,4,2],[8,9,1,6,0,4,3,5,2,7],
+  [9,4,5,3,1,2,6,8,7,0],[4,2,8,6,5,7,3,9,0,1],[2,7,9,3,8,0,6,4,1,5],[7,0,4,6,9,1,3,2,5,8]
+];
+function isValidAadhaarFormat(num){
+  const digits = (num || '').replace(/\s/g,'');
+  if(!/^\d{12}$/.test(digits)) return false;
+  let c = 0;
+  const arr = digits.split('').reverse().map(Number);
+  for(let i=0;i<arr.length;i++){
+    c = VERHOEFF_D[c][VERHOEFF_P[i % 8][arr[i]]];
+  }
+  return c === 0;
+}
+function maskAadhaar(num){
+  const d = (num || '').replace(/\s/g,'');
+  if(d.length !== 12) return '';
+  return 'XXXX XXXX ' + d.slice(8);
 }
 
 /* ============================= BACKEND: FIREBASE FIRESTORE ============================= */
@@ -768,12 +885,12 @@ function logout(){
 // Using the classic script-tag SDK (loaded in <head>) instead of ES module imports so this
 // keeps working when the file is opened directly (file://) as well as when it's hosted.
 const firebaseConfig = {
-  apiKey: "AIzaSyBCjQ-zFH1xgMlmGFJh4ijTn1F_Li4pGhg",
-  authDomain: "agriconnect-acfe7.firebaseapp.com",
-  projectId: "agriconnect-acfe7",
-  storageBucket: "agriconnect-acfe7.firebasestorage.app",
-  messagingSenderId: "453755230384",
-  appId: "1:453755230384:web:8fb315595a45b628108375"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
 };
 let db = null;
 let firebaseReady = false;
