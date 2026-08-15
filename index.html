@@ -146,7 +146,7 @@ const CAT = {
    photos (e.photos) always take priority over these — see expPhoto(). */
 const CAT_IMG = {
   fishing:['https://images.unsplash.com/photo-1660994112482-8b4f07455dec?w=600&h=450&fit=crop&q=70','https://images.unsplash.com/photo-1445264718234-016ce8c9d10b?w=600&h=450&fit=crop&q=70'],
-  food:['https://images.unsplash.com/photo-1512058564366-18510be2db19?w=600&h=450&fit=crop&q=70','https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=600&h=450&fit=crop&q=70'],
+  food:['https://images.unsplash.com/photo-1775433205046-86e060feff06?w=600&h=450&fit=crop&q=70','https://images.unsplash.com/photo-1512058564366-18510be2db19?w=600&h=450&fit=crop&q=70'],
   art:['https://images.unsplash.com/photo-1582561833308-51c65f5a6b5f?w=600&h=450&fit=crop&q=70','https://images.unsplash.com/photo-1590845947676-fa2022e78aa5?w=600&h=450&fit=crop&q=70'],
   pottery:['https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&h=450&fit=crop&q=70','https://images.unsplash.com/photo-1744893611113-115452349aed?w=600&h=450&fit=crop&q=70'],
   farming:['https://images.unsplash.com/photo-1500651230702-0e2d8a49d4ad?w=600&h=450&fit=crop&q=70','https://images.unsplash.com/photo-1592982537447-7440770cbfc9?w=600&h=450&fit=crop&q=70'],
@@ -732,6 +732,21 @@ function restoreSession(){
 function clearSession(){
   try{ localStorage.removeItem(SESSION_KEY); }catch(err){}
 }
+/* ============================= RETURNING-USER LOGIN (skip re-filling the whole form) ============================= */
+/* Looks up the saved record for a name under a given role, so we can tell
+   whether this person has registered before (and therefore only needs to
+   type their name + password to log back in) or whether this is their very
+   first time (in which case we still need phone/OTP/address/Aadhaar). */
+function getUserRecord(role, name){
+  if(!name) return null;
+  if(role==='host') return APP.vendors[name] || null;
+  if(role==='guide') return APP.guides[name] || null;
+  return APP.touristProfiles[name] || null;
+}
+function isReturningUser(role, name){
+  const rec = getUserRecord(role, (name||'').trim());
+  return !!(rec && rec.password);
+}
 function navigate(view, query){
   let h = '#'+view;
   if(query && Object.keys(query).length){ h += '?' + new URLSearchParams(query).toString(); }
@@ -806,6 +821,7 @@ function renderLogin(){
   const role = APP.authRoleTab || 'tourist';
   const lf = APP.loginForm;
   const roleLabel = {tourist:t.tourist, host:t.host, guide:t.guide};
+  const returning = isReturningUser(role, lf.name);
   return `
   <div class="min-h-screen flex items-center justify-center kolam-bg px-5 py-10" style="min-height:100vh;">
     <div class="card p-8 max-w-md w-full fade-in">
@@ -817,34 +833,45 @@ function renderLogin(){
       <div class="flex gap-2 mb-5 flex-wrap">
         ${['tourist','host','guide'].map(r=>`<button class="chip flex-1 !text-center ${role===r?'active':''}" onclick="APP.authRoleTab='${r}';render();">${roleLabel[r]}</button>`).join('')}
       </div>
-      <div class="text-[11px] text-madder text-center -mt-1 mb-3">* All fields are required</div>
-      <div class="grid grid-cols-2 gap-3">
-        <input class="col-span-2" type="text" placeholder="${t.name} *" value="${lf.name}" onchange="APP.loginForm.name=this.value" oninput="APP.loginForm.name=this.value">
+      ${returning ? `
+        <div class="text-xs font-semibold text-palm bg-sandstone rounded-lg p-2 mb-3 text-center">👋 Welcome back! We already have your details on file — just enter your password.</div>
+        <div class="grid grid-cols-1 gap-3">
+          <input type="text" placeholder="${t.name} *" value="${lf.name}" oninput="APP.loginForm.name=this.value;" onchange="APP.loginForm.name=this.value;render();">
+          <input type="password" placeholder="${t.password} *" value="${lf.password}" onchange="APP.loginForm.password=this.value" oninput="APP.loginForm.password=this.value">
+          <button type="button" class="btn-primary w-full" onclick="doLogin('${role}')">${t.login} — ${roleLabel[role]}</button>
+          <span class="text-xs underline cursor-pointer opacity-70 text-center" onclick="APP.loginForm.name='';APP.loginForm.password='';render();">Not you? Use a different name</span>
+        </div>
+      ` : `
+        <div class="text-[11px] text-madder text-center -mt-1 mb-3">* All fields are required</div>
+        <div class="grid grid-cols-2 gap-3">
+          <input class="col-span-2" type="text" placeholder="${t.name} *" value="${lf.name}" oninput="APP.loginForm.name=this.value;" onchange="APP.loginForm.name=this.value;render();">
 
-        <input class="col-span-2" type="text" inputmode="numeric" maxlength="10" placeholder="10-digit mobile number *" value="${lf.phone}" ${lf.phoneVerified?'disabled':''} oninput="APP.loginForm.phone=this.value.replace(/\\D/g,'').slice(0,10);this.value=APP.loginForm.phone;">
+          <input class="col-span-2" type="text" inputmode="numeric" maxlength="10" placeholder="10-digit mobile number *" value="${lf.phone}" ${lf.phoneVerified?'disabled':''} oninput="APP.loginForm.phone=this.value.replace(/\\D/g,'').slice(0,10);this.value=APP.loginForm.phone;">
 
-        ${lf.phoneVerified
-          ? `<div class="col-span-2 text-xs font-semibold text-palm bg-sandstone rounded-lg p-2 flex items-center justify-between"><span>✅ Phone number verified</span><span class="underline cursor-pointer opacity-70" onclick="resetPhoneVerification()">Change number</span></div>`
-          : (lf.otpSent
-            ? `<input type="text" inputmode="numeric" maxlength="6" placeholder="Enter 6-digit OTP" value="${lf.otp}" oninput="APP.loginForm.otp=this.value.replace(/\\D/g,'').slice(0,6);this.value=APP.loginForm.otp;">
-               <button type="button" class="btn-dark !py-2" ${lf.otpBusy?'disabled':''} onclick="verifyOtp()">${lf.otpBusy?'Verifying…':'Verify OTP'}</button>
-               <span class="col-span-2 text-xs underline cursor-pointer opacity-70 text-center" onclick="sendOtp()">Didn't get it? Resend OTP</span>`
-            : `<button type="button" class="col-span-2 btn-outline !py-2" ${lf.otpBusy?'disabled':''} onclick="sendOtp()">${lf.otpBusy?'Sending OTP…':'📲 Send OTP to verify number'}</button>`)
-        }
+          ${lf.phoneVerified
+            ? `<div class="col-span-2 text-xs font-semibold text-palm bg-sandstone rounded-lg p-2 flex items-center justify-between"><span>✅ Phone number verified</span><span class="underline cursor-pointer opacity-70" onclick="resetPhoneVerification()">Change number</span></div>`
+            : (lf.otpSent
+              ? `<input type="text" inputmode="numeric" maxlength="6" placeholder="Enter 6-digit OTP" value="${lf.otp}" oninput="APP.loginForm.otp=this.value.replace(/\\D/g,'').slice(0,6);this.value=APP.loginForm.otp;">
+                 <button type="button" class="btn-dark !py-2" ${lf.otpBusy?'disabled':''} onclick="verifyOtp()">${lf.otpBusy?'Verifying…':'Verify OTP'}</button>
+                 <span class="col-span-2 text-xs underline cursor-pointer opacity-70 text-center" onclick="sendOtp()">Didn't get it? Resend OTP</span>`
+              : `<button type="button" class="col-span-2 btn-outline !py-2" ${lf.otpBusy?'disabled':''} onclick="sendOtp()">${lf.otpBusy?'Sending OTP…':'📲 Send OTP to verify number'}</button>`)
+          }
 
-        <div id="recaptcha-container" class="col-span-2"></div>
+          <div id="recaptcha-container" class="col-span-2"></div>
 
-        <input class="col-span-2" type="password" placeholder="${t.password} *" value="${lf.password}" onchange="APP.loginForm.password=this.value" oninput="APP.loginForm.password=this.value">
-        ${role==='host' ? `<input class="col-span-2" type="text" placeholder="${t.address} *" value="${lf.address}" onchange="APP.loginForm.address=this.value" oninput="APP.loginForm.address=this.value">` : ''}
-        ${role==='guide' ? `<div class="col-span-2"><label class="text-xs font-semibold opacity-70 block mb-1">${t.location} *</label><select onchange="APP.loginForm.location=this.value">${Object.keys(REGIONS).map(s=>`<option ${lf.location===s?'selected':''}>${s}</option>`).join('')}</select></div>` : ''}
-        ${(role==='host'||role==='guide') ? `
-          <input class="col-span-2" type="text" inputmode="numeric" maxlength="12" placeholder="Aadhaar number (12 digits) *" value="${lf.aadhaar}" ${lf.phoneVerified?'':'disabled'} oninput="APP.loginForm.aadhaar=this.value.replace(/\\D/g,'').slice(0,12);this.value=APP.loginForm.aadhaar;">
-          <div class="col-span-2 text-[11px] opacity-60 -mt-2">${lf.phoneVerified ? 'We check this is a validly-formatted Aadhaar number. It is not cross-checked with UIDAI records.' : 'Verify your phone number first to enable this field.'}</div>
-        ` : ''}
-        <button type="button" class="col-span-2 btn-primary w-full" onclick="doLogin('${role}')">${t.login} — ${roleLabel[role]}</button>
-      </div>
+          <input class="col-span-2" type="password" placeholder="${t.password} *" value="${lf.password}" onchange="APP.loginForm.password=this.value" oninput="APP.loginForm.password=this.value">
+          ${role==='host' ? `<input class="col-span-2" type="text" placeholder="${t.address} *" value="${lf.address}" onchange="APP.loginForm.address=this.value" oninput="APP.loginForm.address=this.value">` : ''}
+          ${role==='guide' ? `<div class="col-span-2"><label class="text-xs font-semibold opacity-70 block mb-1">${t.location} *</label><select onchange="APP.loginForm.location=this.value">${Object.keys(REGIONS).map(s=>`<option ${lf.location===s?'selected':''}>${s}</option>`).join('')}</select></div>` : ''}
+          ${(role==='host'||role==='guide') ? `
+            <input class="col-span-2" type="text" inputmode="numeric" maxlength="12" placeholder="Aadhaar number (12 digits) *" value="${lf.aadhaar}" ${lf.phoneVerified?'':'disabled'} oninput="APP.loginForm.aadhaar=this.value.replace(/\\D/g,'').slice(0,12);this.value=APP.loginForm.aadhaar;">
+            <div class="col-span-2 text-[11px] opacity-60 -mt-2">${lf.phoneVerified ? 'We check this is a validly-formatted Aadhaar number. It is not cross-checked with UIDAI records.' : 'Verify your phone number first to enable this field.'}</div>
+          ` : ''}
+          <button type="button" class="col-span-2 btn-primary w-full" onclick="doLogin('${role}')">${t.login} — ${roleLabel[role]}</button>
+        </div>
+        <div class="text-[11px] opacity-50 text-center mt-2">First time registering? This info is saved — next time you'll only need your name and password.</div>
+      `}
       ${role==='host' ? `<div class="text-xs opacity-60 text-center mt-3 bg-sandstone rounded-lg p-2">📱 ${t.vendorRegisterNote}</div>` : ''}
-      ${role==='host' ? `<div class="text-xs opacity-60 text-center mt-2 bg-sandstone rounded-lg p-2">📍 We'll ask for your location on login so tourists can find you.</div>` : ''}
+      ${(role==='host' && !returning) ? `<div class="text-xs opacity-60 text-center mt-2 bg-sandstone rounded-lg p-2">📍 We'll ask for your location on login so tourists can find you.</div>` : ''}
       <div class="text-xs opacity-60 text-center mt-4">${t.newHere}</div>
       <div class="text-center mt-4">
         <span class="text-xs underline cursor-pointer opacity-70" onclick="APP.langChosen=false;render();">⟵ ${t.chooseLanguage}</span>
@@ -854,24 +881,63 @@ function renderLogin(){
 }
 function doLogin(role){
   const lf = APP.loginForm;
-  if(!lf.name.trim() || !lf.password.trim()){ toast('Please enter your name and password to log in.'); return; }
+  const name = lf.name.trim();
+  if(!name || !lf.password.trim()){ toast('Please enter your name and password to log in.'); return; }
+
+  const existing = getUserRecord(role, name);
+  const returning = !!(existing && existing.password);
+
+  /* ---- RETURNING USER: only name + password needed, everything else (phone,
+     address, location, Aadhaar-on-file) is pulled from what was saved the
+     first time they registered. ---- */
+  if(returning){
+    if(existing.password !== lf.password.trim()){
+      toast('❌ Incorrect password. Please try again.');
+      return;
+    }
+    APP.authRole = role;
+    APP.authUser = name;
+    APP.loginForm = Object.assign({}, lf, {
+      phone: existing.phone || '', address: existing.address || '',
+      location: existing.location || lf.location, phoneVerified: true
+    });
+    toast(`Welcome back, ${APP.authUser}! 🎉`);
+    saveSession();
+    if(role==='host'){
+      const businessDone = EXPERIENCES.some(e=>e.host===name) || existing.businessComplete;
+      navigate(businessDone ? 'hostdashboard' : 'hostbusiness');
+      if(typeof existing.lat !== 'number'){ setTimeout(()=>shareVendorLocation(true), 600); } // only re-ask GPS if we don't already have it saved
+    } else {
+      navigate(role==='guide' ? 'guideupcoming' : 'home');
+    }
+    return;
+  }
+
+  /* ---- FIRST-TIME REGISTRATION: full details required, saved (with a
+     password) so every future login can skip straight to the short form
+     above. ---- */
   if(!/^\d{10}$/.test(lf.phone.trim())){ toast('Please enter a valid 10-digit mobile number.'); return; }
   if(!lf.phoneVerified){ toast('Please verify your mobile number with the OTP first.'); return; }
   if((role==='host' || role==='guide') && !isValidAadhaarFormat(lf.aadhaar)){
     toast('Please enter a valid 12-digit Aadhaar number.'); return;
   }
   APP.authRole = role;
-  APP.authUser = lf.name.trim();
+  APP.authUser = name;
+  const password = lf.password.trim();
   let hostIsFirstTime = false;
   if(role==='host'){
     APP.hostView = EXPERIENCES.some(e=>e.host===APP.authUser) ? APP.authUser : APP.hostView;
-    hostIsFirstTime = !EXPERIENCES.some(e=>e.host===APP.authUser) && !(APP.vendors[APP.authUser] && APP.vendors[APP.authUser].businessComplete);
-    registerVendor({name:APP.authUser, phone:lf.phone.trim(), address:lf.address.trim(), lang:APP.uiLang, phoneVerified:true, aadhaarMasked:maskAadhaar(lf.aadhaar)});
+    hostIsFirstTime = true;
+    registerVendor({name:APP.authUser, phone:lf.phone.trim(), address:lf.address.trim(), lang:APP.uiLang, phoneVerified:true, aadhaarMasked:maskAadhaar(lf.aadhaar), password});
   }
   let guideIsFirstLogin = false;
   if(role==='guide'){
-    guideIsFirstLogin = !APP.guides[APP.authUser] || !APP.guides[APP.authUser].profileComplete;
-    registerGuide({name:APP.authUser, phone:lf.phone.trim(), location:lf.location.trim(), lang:APP.uiLang, phoneVerified:true, aadhaarMasked:maskAadhaar(lf.aadhaar)});
+    guideIsFirstLogin = true;
+    registerGuide({name:APP.authUser, phone:lf.phone.trim(), location:lf.location.trim(), lang:APP.uiLang, phoneVerified:true, aadhaarMasked:maskAadhaar(lf.aadhaar), password});
+  }
+  if(role==='tourist'){
+    APP.touristProfiles[name] = Object.assign({name}, APP.touristProfiles[name]||{}, {phone: lf.phone.trim(), phoneVerified:true, password});
+    persist('touristProfiles', APP.touristProfiles);
   }
   toast(`Welcome, ${APP.authUser}! 🎉`);
   saveSession(); // remember this login so a reload doesn't force them to log in / refill the form again
