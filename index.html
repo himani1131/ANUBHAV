@@ -1085,41 +1085,79 @@ try{
 
 const PERSIST_KEYS = ['vendors','guides','notifications','bookings','guideNotifications','guideBookings','confessions','itineraries','touristProfiles','experiences'];
 
+/* ---- local fallback store ----
+   Mirrors everything that would normally go to Firestore into this browser's
+   localStorage too, so a signed-in user's bookings/profile/itinerary/etc. are
+   still there after a reload even when Firestore isn't reachable (offline,
+   Firebase not configured, blocked network, opened as file://, and so on).
+   Firestore, when reachable, is still treated as the source of truth and
+   will overwrite this local copy on the next successful load. */
+const LOCAL_DATA_KEY = 'anubhav_appdata_v1';
+function loadLocalData(){
+  try{
+    const raw = localStorage.getItem(LOCAL_DATA_KEY);
+    return raw ? JSON.parse(raw) : {};
+  }catch(err){ console.warn('Could not read locally-saved data (localStorage unavailable).', err); return {}; }
+}
+function saveLocalData(key, value){
+  try{
+    const all = loadLocalData();
+    all[key] = value;
+    localStorage.setItem(LOCAL_DATA_KEY, JSON.stringify(all));
+  }catch(err){ console.warn('Could not save data locally (localStorage unavailable).', err); }
+}
+/* Applies a {key: value} bundle (from either localStorage or Firestore) onto
+   the in-memory APP state / EXPERIENCES list. Shared by both load paths below
+   so local and server data are handled identically. */
+function applyPersistedData(bundle){
+  if(!bundle) return;
+  if(bundle.vendors) APP.vendors = bundle.vendors;
+  if(bundle.guides) APP.guides = bundle.guides;
+  if(bundle.notifications) APP.notifications = bundle.notifications;
+  if(bundle.bookings && bundle.bookings.length) APP.bookings = bundle.bookings;
+  if(bundle.guideNotifications) APP.guideNotifications = bundle.guideNotifications;
+  if(bundle.guideBookings) APP.guideBookings = bundle.guideBookings;
+  if(bundle.confessions && bundle.confessions.length) APP.confessions = bundle.confessions;
+  if(bundle.itineraries && bundle.itineraries.length) APP.itineraries = bundle.itineraries;
+  if(bundle.touristProfiles) APP.touristProfiles = bundle.touristProfiles;
+  if(bundle.experiences && bundle.experiences.length){
+    // Replaces the in-memory list with the last-saved full list of every
+    // host's real saved business listing.
+    EXPERIENCES = bundle.experiences;
+  }
+}
+
 async function persist(key, value){
-  if(!db) return; // local-only mode: state just lives in memory for this session
+  saveLocalData(key, value); // always keep a local copy — this is what survives reloads when there's no Firestore
+  if(!db) return; // local-only mode: the localStorage copy above is all we have
   try{
     await db.collection('appdata').doc(key).set({
       value: JSON.stringify(value),
       updatedAt: new Date().toISOString()
     });
-  }catch(err){ console.error('Firestore save failed', key, err); toast('⚠️ Could not save to the server — check your connection.'); }
+  }catch(err){ console.error('Firestore save failed', key, err); toast('⚠️ Could not save to the server — your changes are still saved on this device.'); }
 }
 
 async function loadBackend(){
+  // 1) Apply whatever's saved locally first, so a signed-in user's data (and
+  //    the app in general) is available immediately, even fully offline.
+  applyPersistedData(loadLocalData());
+  render();
+
+  // 2) Then try Firestore — when reachable, it's the source of truth and
+  //    overwrites the local snapshot above (and re-syncs the local copy).
   if(db){
     try{
       const snap = await db.collection('appdata').get();
+      const fromServer = {};
       snap.forEach(doc=>{
         if(!PERSIST_KEYS.includes(doc.id)) return;
-        let val;
-        try{ val = JSON.parse(doc.data().value); }catch(e){ return; }
-        if(doc.id==='vendors') APP.vendors = val;
-        else if(doc.id==='guides') APP.guides = val;
-        else if(doc.id==='notifications') APP.notifications = val;
-        else if(doc.id==='bookings' && val && val.length) APP.bookings = val;
-        else if(doc.id==='guideNotifications') APP.guideNotifications = val;
-        else if(doc.id==='guideBookings') APP.guideBookings = val;
-        else if(doc.id==='confessions' && val && val.length) APP.confessions = val;
-        else if(doc.id==='itineraries' && val && val.length) APP.itineraries = val;
-        else if(doc.id==='touristProfiles') APP.touristProfiles = val;
-        else if(doc.id==='experiences' && val && val.length){
-          // Replaces the in-memory list with the last-saved full list of every
-          // host's real saved business listing.
-          EXPERIENCES = val;
-        }
+        try{ fromServer[doc.id] = JSON.parse(doc.data().value); }catch(e){ /* skip unreadable doc */ }
       });
+      applyPersistedData(fromServer);
+      Object.keys(fromServer).forEach(k=>saveLocalData(k, fromServer[k]));
     }catch(err){
-      console.error('Firestore load failed, continuing with whatever is in memory locally.', err);
+      console.error('Firestore load failed, continuing with locally-saved data only.', err);
       toast('⚠️ Could not reach the server — showing locally-saved data only.');
     }
   }
@@ -1409,7 +1447,6 @@ function renderDrawer(active){
 /* ============================= HOME ============================= */
 function renderHome(){
   const tr = TRANSLATIONS[APP.uiLang];
-  const featured = EXPERIENCES.slice().sort((a,b)=>b.rating-a.rating).slice(0,6);
   return `
   ${renderNav('home')}
   <div class="kolam-bg px-5 py-14 text-center">
@@ -1421,35 +1458,6 @@ function renderHome(){
     </div>
     <div class="mt-5">
       <button class="btn-dark" onclick="navigate('explore')">${tr.getStarted}</button>
-    </div>
-  </div>
-  <div class="max-w-6xl mx-auto px-5 py-10">
-    <div class="flex justify-between items-center mb-5">
-      <div class="font-display text-xl font-bold text-indigo-deep">${tr.featuredTitle}</div>
-      <span class="text-sm underline cursor-pointer text-indigo-deep" onclick="navigate('explore')">${tr.viewAll}</span>
-    </div>
-    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-      ${featured.length ? featured.map(e=>expCard(e)).join('') : `<div class="opacity-60 col-span-full text-center py-6">${tr.noneYet} <span class="underline cursor-pointer text-indigo-deep" onclick="navigate('login')">Be the first community host to list an experience →</span></div>`}
-    </div>
-  </div>`;
-}
-function expCard(e, distKm){
-  return `
-  <div class="card overflow-hidden cursor-pointer" onclick="navigate('experience',{id:'${e.id}'})">
-    <div class="photo-tile-wrap">
-      <img class="photo-tile" loading="lazy" referrerpolicy="no-referrer" src="${expPhoto(e)}" alt="${e.title}" onerror="${expPhotoOnError(e.cat)}">
-      <div class="photo-emoji-badge">${e.icon}</div>
-    </div>
-    <div class="p-4">
-      <div class="flex justify-between items-start gap-2">
-        <div class="font-display font-bold text-indigo-deep text-sm leading-snug">${e.title}</div>
-        ${e.verified?`<span class="badge-verified whitespace-nowrap">✓ Verified</span>`:''}
-      </div>
-      <div class="text-xs opacity-60 mt-1">${e.city}, ${e.state}${typeof distKm==='number' ? ` · 📍 ${distKm.toFixed(1)} km away` : ''}</div>
-      <div class="flex justify-between items-center mt-3">
-        <div class="text-sm">${e.reviewCount ? `⭐ ${e.rating} <span class="opacity-50">(${e.reviewCount})</span>` : `<span class="opacity-50">New listing</span>`}</div>
-        <div class="font-bold text-madder">${fmt(e.price)}</div>
-      </div>
     </div>
   </div>`;
 }
@@ -1489,6 +1497,26 @@ function renderExplore(){
     <div class="opacity-60 text-sm mb-5">${list.length} experiences${q?` for "${q}"`:''}</div>
     <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
       ${list.map(e=>expCard(e, distFor ? distFor(e) : undefined)).join('') || `<div class="opacity-60 col-span-full">${tr.noneYet}</div>`}
+    </div>
+  </div>`;
+}
+function expCard(e, distKm){
+  return `
+  <div class="card overflow-hidden cursor-pointer" onclick="navigate('experience',{id:'${e.id}'})">
+    <div class="photo-tile-wrap">
+      <img class="photo-tile" loading="lazy" referrerpolicy="no-referrer" src="${expPhoto(e)}" alt="${e.title}" onerror="${expPhotoOnError(e.cat)}">
+      <div class="photo-emoji-badge">${e.icon}</div>
+    </div>
+    <div class="p-4">
+      <div class="flex justify-between items-start gap-2">
+        <div class="font-display font-bold text-indigo-deep text-sm leading-snug">${e.title}</div>
+        ${e.verified?`<span class="badge-verified whitespace-nowrap">✓ Verified</span>`:''}
+      </div>
+      <div class="text-xs opacity-60 mt-1">${e.city}, ${e.state}${typeof distKm==='number' ? ` · 📍 ${distKm.toFixed(1)} km away` : ''}</div>
+      <div class="flex justify-between items-center mt-3">
+        <div class="text-sm">${e.reviewCount ? `⭐ ${e.rating} <span class="opacity-50">(${e.reviewCount})</span>` : `<span class="opacity-50">New listing</span>`}</div>
+        <div class="font-bold text-madder">${fmt(e.price)}</div>
+      </div>
     </div>
   </div>`;
 }
