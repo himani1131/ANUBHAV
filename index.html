@@ -1083,7 +1083,13 @@ try{
   }
 }catch(err){ console.error('Firebase init failed', err); }
 
-const PERSIST_KEYS = ['vendors','guides','notifications','bookings','guideNotifications','guideBookings','confessions','itineraries','touristProfiles','experiences'];
+/* 'experiences' is deliberately NOT in this list — every host's business
+   listing (including their photos) is saved as its OWN Firestore document
+   (see persistExperience/loadBackend below) instead of being crammed into one
+   shared document with every other host. A single shared document would hit
+   Firestore's 1MB-per-document limit as soon as a handful of hosts had
+   uploaded photos, which silently failed the save for everyone. */
+const PERSIST_KEYS = ['vendors','guides','notifications','bookings','guideNotifications','guideBookings','confessions','itineraries','touristProfiles'];
 
 /* ---- local fallback store ----
    Mirrors everything that would normally go to Firestore into this browser's
@@ -1138,6 +1144,28 @@ async function persist(key, value){
   }catch(err){ console.error('Firestore save failed', key, err); toast('⚠️ Could not save to the server — your changes are still saved on this device.'); }
 }
 
+/* Saves ONE host's experience/listing as its own document in a dedicated
+   'experiences' collection (doc id = experience id), instead of lumping every
+   host's listing + photos into a single shared document. This is what keeps
+   one host's photos from ever pushing a shared document over Firestore's 1MB
+   limit and breaking saves for every other host too. */
+async function persistExperience(exp){
+  saveLocalData('experiences', EXPERIENCES); // local fallback copy of the full list, for offline reloads
+  if(!db) return;
+  try{
+    await db.collection('experiences').doc(exp.id).set(Object.assign({}, exp, {
+      updatedAt: new Date().toISOString()
+    }));
+  }catch(err){
+    console.error('Firestore save failed for experience', exp.id, err);
+    if(err && (err.code==='invalid-argument' || /longer than|exceeds the maximum|too large/i.test(err.message||''))){
+      toast('⚠️ Your photos are still a bit too large to save to the server, even compressed. Your listing is saved on this device — please try removing a photo or two and save again.');
+    } else {
+      toast('⚠️ Could not save to the server — your changes are still saved on this device.');
+    }
+  }
+}
+
 async function loadBackend(){
   // 1) Apply whatever's saved locally first, so a signed-in user's data (and
   //    the app in general) is available immediately, even fully offline.
@@ -1159,6 +1187,21 @@ async function loadBackend(){
     }catch(err){
       console.error('Firestore load failed, continuing with locally-saved data only.', err);
       toast('⚠️ Could not reach the server — showing locally-saved data only.');
+    }
+    // Experiences (every host's business listing + photos) live in their own
+    // collection, one document per experience — load them all and replace
+    // the in-memory list, same as every other host will see.
+    try{
+      const expSnap = await db.collection('experiences').get();
+      const fromServerExps = [];
+      expSnap.forEach(doc=>fromServerExps.push(doc.data()));
+      if(fromServerExps.length){
+        EXPERIENCES = fromServerExps;
+        saveLocalData('experiences', EXPERIENCES);
+      }
+    }catch(err){
+      console.error('Firestore load failed for experiences, continuing with locally-saved data only.', err);
+      toast('⚠️ Could not reach the server for listings — showing locally-saved data only.');
     }
   }
   render();
@@ -1933,20 +1976,62 @@ function toggleHostLang(code){
   f.languages = f.languages.includes(code) ? f.languages.filter(l=>l!==code) : f.languages.concat(code);
   render();
 }
-function addHostPhotos(fileList){
-  const files = Array.from(fileList || []).slice(0, 8 - APP.hostBusinessForm.photos.length);
-  if(!files.length) return;
-  let remaining = files.length;
-  files.forEach(file=>{
+/* Real phone-camera photos are often 3–8MB each, which is way over Firestore's
+   1MB-per-document limit and eats through localStorage's ~5-10MB quota after
+   just one or two photos. This resizes the photo down to a sane max dimension
+   and re-encodes it as a compressed JPEG so a typical photo lands around
+   60-150KB instead — small enough that several photos per host still fit
+   comfortably in one Firestore document and in localStorage. */
+function compressImageFile(file, maxDim, quality){
+  return new Promise((resolve, reject)=>{
     const reader = new FileReader();
+    reader.onerror = ()=>reject(new Error('Could not read the file.'));
     reader.onload = ev=>{
-      APP.hostBusinessForm.photos.push(ev.target.result);
-      remaining--;
-      if(remaining<=0) render();
+      const img = new Image();
+      img.onerror = ()=>reject(new Error('Could not decode the image.'));
+      img.onload = ()=>{
+        let {width, height} = img;
+        if(width > height && width > maxDim){ height = Math.round(height * (maxDim/width)); width = maxDim; }
+        else if(height > maxDim){ width = Math.round(width * (maxDim/height)); height = maxDim; }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = ev.target.result;
     };
-    reader.onerror = ()=>{ toast('Could not read that photo — please try another file.'); remaining--; if(remaining<=0) render(); };
     reader.readAsDataURL(file);
   });
+}
+/* Max size (bytes, as base64) we'll accept for a single stored photo even
+   after compression — protects against Firestore's 1MB document cap when a
+   host adds several photos at once. Tries progressively lower quality before
+   giving up on a particular file. */
+const MAX_PHOTO_BYTES = 220 * 1024;
+async function compressToBudget(file){
+  const attempts = [[1280,0.72],[1000,0.62],[800,0.5],[640,0.4]];
+  let last = null;
+  for(const [dim,q] of attempts){
+    last = await compressImageFile(file, dim, q);
+    if(last.length <= MAX_PHOTO_BYTES) return last;
+  }
+  return last; // best effort — smallest attempt we managed
+}
+async function addHostPhotos(fileList){
+  const files = Array.from(fileList || []).slice(0, 8 - APP.hostBusinessForm.photos.length);
+  if(!files.length) return;
+  toast('Processing photo' + (files.length>1?'s':'') + '…');
+  for(const file of files){
+    try{
+      const compressed = await compressToBudget(file);
+      APP.hostBusinessForm.photos.push(compressed);
+      render();
+    }catch(err){
+      console.warn('Photo processing failed', err);
+      toast('Could not process that photo — please try another file.');
+    }
+  }
 }
 function removeHostPhoto(idx){
   APP.hostBusinessForm.photos.splice(idx,1);
@@ -1983,7 +2068,8 @@ function saveHostBusiness(){
   }
   const vendor = APP.vendors[vendorName] || {};
   registerVendor(Object.assign({}, vendor, {name:vendorName, businessComplete:true}));
-  persist('experiences', EXPERIENCES); // save the listing itself so it survives a page reload, not just in memory
+  const savedExp = EXPERIENCES.find(e=>e.id===f.expId);
+  persistExperience(savedExp); // save just this host's listing+photos as its own document, so it survives a page reload
   toast('✅ Your business details and photos are saved — tourists can now see your real listing.');
   navigate('hostdashboard');
 }
